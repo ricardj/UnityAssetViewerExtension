@@ -1,0 +1,16 @@
+{
+  "name": "unity-asset-viewer-extension",
+  "version": "1.0.0",
+  "description": "Chrome extension to review Unity Prefabs in GitHub and GitLab MRs",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT"
+}

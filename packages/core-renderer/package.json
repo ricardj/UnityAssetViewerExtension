@@ -1,0 +1,17 @@
+{
+  "name": "@unity-asset-viewer/core-renderer",
+  "version": "1.0.0",
+  "description": "Renderer for Unity Prefabs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@unity-asset-viewer/core-parser": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

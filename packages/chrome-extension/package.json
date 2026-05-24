@@ -1,0 +1,17 @@
+{
+  "name": "@unity-asset-viewer/chrome-extension",
+  "version": "1.0.0",
+  "description": "Chrome Extension for reviewing Unity Prefabs",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  },
+  "dependencies": {
+    "@unity-asset-viewer/core-parser": "^1.0.0",
+    "@unity-asset-viewer/core-renderer": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0"
+  }
+}
