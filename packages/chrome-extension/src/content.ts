@@ -73,6 +73,7 @@ function injectPrefabViewers() {
         }
         
         const hierarchy = buildHierarchy(parsed.objects);
+        console.log("Hierarchy Output:", hierarchy);
         const renderEl = renderHierarchy(hierarchy);
         
         renderEl.style.minHeight = '600px';

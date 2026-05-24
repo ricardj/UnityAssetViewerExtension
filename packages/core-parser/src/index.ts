@@ -38,7 +38,7 @@ export function parseUnityYaml(yamlString: string): ParsedPrefab {
     const body = match[3];
     
     try {
-      const parsed = YAML.parse(body);
+      const parsed = YAML.parse(body, { intAsBigInt: true });
       if (parsed) {
         const typeStr = Object.keys(parsed)[0]; // e.g. "GameObject"
         documents.push({
