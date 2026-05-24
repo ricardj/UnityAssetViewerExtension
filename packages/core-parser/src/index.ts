@@ -90,7 +90,7 @@ export function buildHierarchy(objects: UnityObject[]): HierarchyNode[] {
   gameObjects.forEach(go => {
     nodes.set(go.id, {
       gameObject: go,
-      components: go.properties.m_Component?.map((c: any) => objMap.get(c.component.fileID)).filter(Boolean) || [],
+      components: go.properties.m_Component?.map((c: any) => c.component?.fileID ? objMap.get(c.component.fileID.toString()) : undefined).filter(Boolean) || [],
       children: []
     });
   });
@@ -99,19 +99,19 @@ export function buildHierarchy(objects: UnityObject[]): HierarchyNode[] {
 
   // Build tree based on Transform parent/child
   transforms.forEach(t => {
-    const goId = t.properties.m_GameObject?.fileID;
+    const goId = t.properties.m_GameObject?.fileID?.toString();
     if (!goId) return;
 
     const node = nodes.get(goId);
     if (!node) return;
 
-    const parentId = t.properties.m_Father?.fileID;
+    const parentId = t.properties.m_Father?.fileID?.toString();
     if (parentId && parentId !== "0") {
       // Find parent Transform
       const parentTransform = objMap.get(parentId);
       if (parentTransform) {
-        const parentGoId = parentTransform.properties.m_GameObject?.fileID;
-        const parentNode = nodes.get(parentGoId);
+        const parentGoId = parentTransform.properties.m_GameObject?.fileID?.toString();
+        const parentNode = parentGoId ? nodes.get(parentGoId) : undefined;
         if (parentNode) {
           parentNode.children.push(node);
         } else {
