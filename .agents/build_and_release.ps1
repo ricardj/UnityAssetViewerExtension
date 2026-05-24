@@ -2,9 +2,18 @@ param (
     [string]$Url = "https://github.com/microsoft/MixedRealityToolkit-Unity/pulls?q=is%3Apr+prefab+UI"
 )
 
+Write-Host "=== Unity Asset Viewer - Build & Release ==="
+
+# Step 1: Build the Chrome extension
 Write-Host "Building Chrome Extension with Vite..."
 cmd.exe /c "npm run build --workspace=@unity-asset-viewer/chrome-extension"
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Build failed!"
+    exit 1
+}
+Write-Host "Build completed successfully."
 
+# Step 2: Resolve paths
 $ExtensionPath = Join-Path -Path $PWD -ChildPath "packages\chrome-extension\dist"
 $TempProfile = Join-Path $env:TEMP "chrome-test-profile"
 
@@ -12,25 +21,29 @@ if (-Not (Test-Path $TempProfile)) {
     New-Item -ItemType Directory -Path $TempProfile | Out-Null
 }
 
+# Step 3: Find Chrome
 $ChromePath = "C:\Program Files\Google\Chrome\Application\chrome.exe"
 if (-Not (Test-Path $ChromePath)) {
     $ChromePath = "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
 }
-
-$ArgsString = "--user-data-dir=`"$TempProfile`" --load-extension=`"$ExtensionPath`" --enable-logging --v=1"
-if ($Url) {
-    $ArgsString += " `"$Url`""
+if (-Not (Test-Path $ChromePath)) {
+    Write-Error "Chrome not found! Please install Google Chrome."
+    exit 1
 }
 
-Write-Host "Using Scheduled Task to launch Chrome interactively on the user desktop..."
+# Step 4: Launch Chrome with the unpacked extension
+$Args = @(
+    "--user-data-dir=`"$TempProfile`"",
+    "--load-extension=`"$ExtensionPath`""
+)
+if ($Url) {
+    $Args += "`"$Url`""
+}
 
-# Register and start a scheduled task to force Chrome to open in the interactive user session
-$action = New-ScheduledTaskAction -Execute $ChromePath -Argument $ArgsString
-Register-ScheduledTask -Action $action -TaskName "LaunchChromeInteractive" -User $env:USERNAME -Force | Out-Null
-Start-ScheduledTask -TaskName "LaunchChromeInteractive"
+Write-Host "Launching Chrome with unpacked extension..."
+Write-Host "  Extension: $ExtensionPath"
+Write-Host "  Profile:   $TempProfile"
 
-# Wait a second and clean up the task
-Start-Sleep -Seconds 2
-Unregister-ScheduledTask -TaskName "LaunchChromeInteractive" -Confirm:$false | Out-Null
+Start-Process -FilePath $ChromePath -ArgumentList $Args
 
-Write-Host "Chrome launched successfully on the interactive desktop!"
+Write-Host "Chrome launched successfully!"
