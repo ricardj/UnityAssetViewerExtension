@@ -1,26 +1,36 @@
-# .agents/build_and_release.ps1
-# This script builds the Chrome extension and loads it into Chrome.
+param (
+    [string]$Url = "https://github.com/microsoft/MixedRealityToolkit-Unity/pulls?q=is%3Apr+prefab+UI"
+)
 
 Write-Host "Building Chrome Extension with Vite..."
-# Run npm build for the chrome-extension workspace
 cmd.exe /c "npm run build --workspace=@unity-asset-viewer/chrome-extension"
 
 $ExtensionPath = Join-Path -Path $PWD -ChildPath "packages\chrome-extension\dist"
+$TempProfile = Join-Path $env:TEMP "chrome-test-profile"
 
-if (-Not (Test-Path $ExtensionPath)) {
-    Write-Error "Extension build directory not found at $ExtensionPath. Build may have failed."
-    exit 1
+if (-Not (Test-Path $TempProfile)) {
+    New-Item -ItemType Directory -Path $TempProfile | Out-Null
 }
 
-Write-Host "Closing existing Chrome instances to reload the extension..."
-# Close Chrome silently if it's running so we can reload the extension cleanly
-Stop-Process -Name chrome -ErrorAction SilentlyContinue
+$ChromePath = "C:\Program Files\Google\Chrome\Application\chrome.exe"
+if (-Not (Test-Path $ChromePath)) {
+    $ChromePath = "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
+}
 
-# Wait a moment for Chrome to fully close
+$ArgsString = "--user-data-dir=`"$TempProfile`" --load-extension=`"$ExtensionPath`" --enable-logging --v=1"
+if ($Url) {
+    $ArgsString += " `"$Url`""
+}
+
+Write-Host "Using Scheduled Task to launch Chrome interactively on the user desktop..."
+
+# Register and start a scheduled task to force Chrome to open in the interactive user session
+$action = New-ScheduledTaskAction -Execute $ChromePath -Argument $ArgsString
+Register-ScheduledTask -Action $action -TaskName "LaunchChromeInteractive" -User $env:USERNAME -Force | Out-Null
+Start-ScheduledTask -TaskName "LaunchChromeInteractive"
+
+# Wait a second and clean up the task
 Start-Sleep -Seconds 2
+Unregister-ScheduledTask -TaskName "LaunchChromeInteractive" -Confirm:$false | Out-Null
 
-Write-Host "Launching Chrome with unpacked extension..."
-# Load the extension in Chrome. The --load-extension flag forces it to install/reload the unpacked extension.
-Start-Process "chrome.exe" -ArgumentList "--load-extension=`"$ExtensionPath`""
-
-Write-Host "Extension loaded successfully!"
+Write-Host "Chrome launched successfully on the interactive desktop!"
