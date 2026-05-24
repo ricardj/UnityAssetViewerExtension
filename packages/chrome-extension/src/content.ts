@@ -1,5 +1,6 @@
-import { parseUnityYaml, buildHierarchy } from '@unity-asset-viewer/core-parser';
+import { parseUnityYaml, buildHierarchy, applyModifications } from '@unity-asset-viewer/core-parser';
 import { renderHierarchy } from '@unity-asset-viewer/core-renderer';
+import { saveHandle, loadHandle, findPrefabByGuid } from './localRepo';
 
 console.log("Unity Asset Viewer content script loaded.");
 
@@ -9,7 +10,6 @@ function injectPrefabViewers() {
   fileHeaders.forEach(header => {
     if (header.hasAttribute('data-unity-viewer-injected')) return;
     
-    // Check if this is a prefab file
     const titleLink = header.querySelector('a.Link--primary');
     if (!titleLink || !titleLink.textContent?.trim().endsWith('.prefab')) return;
     
@@ -26,8 +26,6 @@ function injectPrefabViewers() {
       const fileContainer = header.closest('.file');
       if (!fileContainer) return;
       
-      // Look for the "View file" link which contains the commit hash URL
-      // It's usually inside a dropdown or directly in the header actions
       const links = Array.from(header.querySelectorAll('a[href*="/blob/"]'));
       let rawUrl = '';
       if (links.length > 0) {
@@ -44,8 +42,37 @@ function injectPrefabViewers() {
         const response = await fetch(rawUrl);
         const yamlText = await response.text();
         
-        const objects = parseUnityYaml(yamlText);
-        const hierarchy = buildHierarchy(objects);
+        let parsed = parseUnityYaml(yamlText);
+
+        // VARIANT RESOLUTION
+        if (parsed.variantInfo) {
+          button.textContent = '📂 Requesting Local Repo Access...';
+          
+          let handle = await loadHandle();
+          if (!handle) {
+            alert('This is a Prefab Variant! We need to search your local Unity repository to find the base prefab.');
+            handle = await (window as any).showDirectoryPicker();
+            if (handle) await saveHandle(handle);
+          }
+
+          if (handle) {
+            // Ensure we have read permissions
+            if (await (handle as any).queryPermission({ mode: 'read' }) !== 'granted') {
+              await (handle as any).requestPermission({ mode: 'read' });
+            }
+
+            button.textContent = '🔍 Searching Local Repo for Base Prefab...';
+            const baseYaml = await findPrefabByGuid(handle, parsed.variantInfo.basePrefabGuid);
+            if (baseYaml) {
+              const baseParsed = parseUnityYaml(baseYaml);
+              parsed = applyModifications(baseParsed, parsed.variantInfo);
+            } else {
+              alert('Could not find the base prefab in the local repository!');
+            }
+          }
+        }
+        
+        const hierarchy = buildHierarchy(parsed.objects);
         const renderEl = renderHierarchy(hierarchy);
         
         renderEl.style.minHeight = '600px';
@@ -53,7 +80,7 @@ function injectPrefabViewers() {
         
         const contentDiv = fileContainer.querySelector('.js-file-content');
         if (contentDiv) {
-          contentDiv.innerHTML = ''; // Hide raw YAML text diff
+          contentDiv.innerHTML = ''; 
           contentDiv.appendChild(renderEl);
         }
         
@@ -72,5 +99,4 @@ function injectPrefabViewers() {
   });
 }
 
-// Run periodically to catch GitHub's SPA navigation (Turbo)
 setInterval(injectPrefabViewers, 1500);

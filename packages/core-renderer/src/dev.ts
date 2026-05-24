@@ -7,10 +7,10 @@ import { renderHierarchy } from './index';
 import samplePrefab from '../../core-parser/tests/sample.prefab?raw';
 
 function init() {
-  const objects = parseUnityYaml(samplePrefab);
-  console.log('Parsed Objects:', objects);
+  const parsed = parseUnityYaml(samplePrefab);
+  console.log('Parsed Objects:', parsed.objects);
   
-  const hierarchy = buildHierarchy(objects);
+  const hierarchy = buildHierarchy(parsed.objects);
   console.log('Hierarchy:', hierarchy);
   
   const rootEl = renderHierarchy(hierarchy);

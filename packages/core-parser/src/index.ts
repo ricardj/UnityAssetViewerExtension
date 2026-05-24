@@ -7,8 +7,24 @@ export interface UnityObject {
   properties: any;
 }
 
-export function parseUnityYaml(yamlString: string): UnityObject[] {
+export interface PrefabVariantInfo {
+  basePrefabGuid: string;
+  modifications: Array<{
+    targetFileId: string;
+    propertyPath: string;
+    value: any;
+    objectReference?: any;
+  }>;
+}
+
+export interface ParsedPrefab {
+  objects: UnityObject[];
+  variantInfo?: PrefabVariantInfo;
+}
+
+export function parseUnityYaml(yamlString: string): ParsedPrefab {
   const documents: UnityObject[] = [];
+  let variantInfo: PrefabVariantInfo | undefined = undefined;
   
   // A regex to find the start of a document: --- !u!{typeId} &{id}
   // Unity YAML starts with %YAML 1.1 and %TAG... we can ignore those.
@@ -31,13 +47,27 @@ export function parseUnityYaml(yamlString: string): UnityObject[] {
           typeStr,
           properties: parsed[typeStr]
         });
+        if (typeStr === 'PrefabInstance') {
+          const props = parsed[typeStr];
+          if (props.m_SourcePrefab && props.m_SourcePrefab.guid) {
+            variantInfo = {
+              basePrefabGuid: props.m_SourcePrefab.guid,
+              modifications: props.m_Modification?.m_Modifications?.map((mod: any) => ({
+                targetFileId: mod.target?.fileID,
+                propertyPath: mod.propertyPath,
+                value: mod.value,
+                objectReference: mod.objectReference
+              })) || []
+            };
+          }
+        }
       }
     } catch (e) {
       console.error(`Failed to parse document ${id} of type ${typeId}`, e);
     }
   }
   
-  return documents;
+  return { objects: documents, variantInfo };
 }
 
 // Helper to extract hierarchy
@@ -96,4 +126,34 @@ export function buildHierarchy(objects: UnityObject[]): HierarchyNode[] {
   });
 
   return rootNodes;
+}
+
+export function applyModifications(baseParsed: ParsedPrefab, variantInfo: PrefabVariantInfo): ParsedPrefab {
+  // Deep clone the base objects so we don't mutate the cached version
+  const newObjects = JSON.parse(JSON.stringify(baseParsed.objects)) as UnityObject[];
+  const objMap = new Map<string, UnityObject>();
+  newObjects.forEach(obj => objMap.set(obj.id, obj));
+
+  for (const mod of variantInfo.modifications) {
+    const targetObj = objMap.get(mod.targetFileId);
+    if (!targetObj) continue;
+
+    const pathParts = mod.propertyPath.split('.');
+    let current = targetObj.properties;
+    for (let i = 0; i < pathParts.length - 1; i++) {
+      if (current[pathParts[i]] === undefined || current[pathParts[i]] === null) {
+        current[pathParts[i]] = {};
+      }
+      current = current[pathParts[i]];
+    }
+    
+    const lastPart = pathParts[pathParts.length - 1];
+    if (mod.objectReference && mod.objectReference.fileID !== 0) {
+      current[lastPart] = mod.objectReference;
+    } else {
+      current[lastPart] = mod.value;
+    }
+  }
+
+  return { objects: newObjects };
 }
