@@ -1,6 +1,6 @@
 {
   "name": "@unity-asset-viewer/chrome-extension",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Chrome Extension for reviewing Unity Prefabs",
   "scripts": {
     "prebuild": "node scripts/prebuild.js",

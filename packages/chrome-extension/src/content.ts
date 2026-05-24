@@ -65,7 +65,7 @@ function injectPrefabViewers() {
             const baseYaml = await findPrefabByGuid(handle, parsed.variantInfo.basePrefabGuid);
             if (baseYaml) {
               const baseParsed = parseUnityYaml(baseYaml);
-              parsed = applyModifications(baseParsed, parsed.variantInfo);
+              parsed = applyModifications(baseParsed, parsed);
             } else {
               alert('Could not find the base prefab in the local repository!');
             }
