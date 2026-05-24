@@ -1,17 +1,76 @@
+import { parseUnityYaml, buildHierarchy } from '@unity-asset-viewer/core-parser';
+import { renderHierarchy } from '@unity-asset-viewer/core-renderer';
+
 console.log("Unity Asset Viewer content script loaded.");
 
-const banner = document.createElement('div');
-banner.style.position = 'fixed';
-banner.style.bottom = '20px';
-banner.style.right = '20px';
-banner.style.backgroundColor = '#2563eb';
-banner.style.color = '#ffffff';
-banner.style.padding = '12px 24px';
-banner.style.borderRadius = '8px';
-banner.style.zIndex = '999999';
-banner.style.fontFamily = 'system-ui, sans-serif';
-banner.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-banner.style.fontWeight = '500';
-banner.innerHTML = '🎮 Unity Asset Viewer is Active!';
+function injectPrefabViewers() {
+  const fileHeaders = document.querySelectorAll('.file-header');
+  
+  fileHeaders.forEach(header => {
+    if (header.hasAttribute('data-unity-viewer-injected')) return;
+    
+    // Check if this is a prefab file
+    const titleLink = header.querySelector('a.Link--primary');
+    if (!titleLink || !titleLink.textContent?.trim().endsWith('.prefab')) return;
+    
+    header.setAttribute('data-unity-viewer-injected', 'true');
+    
+    const button = document.createElement('button');
+    button.textContent = '👁️ Render UI Prefab';
+    button.className = 'btn btn-sm btn-primary';
+    button.style.marginRight = '8px';
+    
+    button.addEventListener('click', async (e) => {
+      e.preventDefault();
+      
+      const fileContainer = header.closest('.file');
+      if (!fileContainer) return;
+      
+      // Look for the "View file" link which contains the commit hash URL
+      // It's usually inside a dropdown or directly in the header actions
+      const links = Array.from(header.querySelectorAll('a[href*="/blob/"]'));
+      let rawUrl = '';
+      if (links.length > 0) {
+         rawUrl = (links[0] as HTMLAnchorElement).href.replace('/blob/', '/raw/');
+      } else {
+         alert('Could not find the raw file URL in the DOM.');
+         return;
+      }
+      
+      button.textContent = '⏳ Loading...';
+      button.disabled = true;
+      
+      try {
+        const response = await fetch(rawUrl);
+        const yamlText = await response.text();
+        
+        const objects = parseUnityYaml(yamlText);
+        const hierarchy = buildHierarchy(objects);
+        const renderEl = renderHierarchy(hierarchy);
+        
+        renderEl.style.minHeight = '600px';
+        renderEl.style.borderTop = '1px solid #30363d';
+        
+        const contentDiv = fileContainer.querySelector('.js-file-content');
+        if (contentDiv) {
+          contentDiv.innerHTML = ''; // Hide raw YAML text diff
+          contentDiv.appendChild(renderEl);
+        }
+        
+        button.textContent = '✅ Rendered';
+      } catch (err) {
+        console.error(err);
+        button.textContent = '❌ Error';
+        button.disabled = false;
+      }
+    });
+    
+    const fileActions = header.querySelector('.file-actions');
+    if (fileActions) {
+      fileActions.prepend(button);
+    }
+  });
+}
 
-document.body.appendChild(banner);
+// Run periodically to catch GitHub's SPA navigation (Turbo)
+setInterval(injectPrefabViewers, 1500);
