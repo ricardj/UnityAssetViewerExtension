@@ -7,8 +7,8 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces",
-    "test": "npm run test --workspaces"
+    "build": "npm run build --workspace=@unity-asset-viewer/core-parser && npm run build --workspace=@unity-asset-viewer/core-renderer && npm run build --workspace=@unity-asset-viewer/chrome-extension && npm run build --workspace=@unity-asset-viewer/vscode-extension",
+    "test": "npm run test --workspace=@unity-asset-viewer/core-parser && npm run test --workspace=@unity-asset-viewer/core-renderer"
   },
   "keywords": [],
   "author": "",
