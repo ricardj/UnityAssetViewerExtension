@@ -1,6 +1,6 @@
 const fs = require('fs');
-const { parseUnityYaml, buildHierarchy, applyModifications } = require('./packages/core-parser/dist/index.js');
-const { renderHierarchy } = require('./packages/core-renderer/dist/index.js');
+const { parseUnityYaml, buildHierarchy, applyModifications } = require('../dist');
+const { renderHierarchy } = require('@unity-asset-viewer/core-renderer');
 
 const samplePrefab = fs.readFileSync('C:/Users/User/.gemini/antigravity/brain/e9e53762-57b3-4367-87fa-2f8d6c0080e1/.system_generated/steps/457/content.md', 'utf8');
 
