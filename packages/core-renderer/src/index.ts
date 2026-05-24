@@ -77,6 +77,38 @@ function buildHierarchyTree(node: HierarchyNode): HTMLElement {
   item.appendChild(label);
   
   const childrenContainer = document.createElement('div');
+  
+  // Render Components as collapsible children
+  if (node.components && node.components.length > 0) {
+    const compsContainer = document.createElement('div');
+    compsContainer.style.paddingLeft = '14px';
+    compsContainer.style.borderLeft = '1px dashed #555';
+    compsContainer.style.marginBottom = '4px';
+    compsContainer.style.display = 'none'; // collapsed by default
+    
+    label.style.cursor = 'pointer';
+    label.addEventListener('click', (e) => {
+      e.stopPropagation();
+      compsContainer.style.display = compsContainer.style.display === 'none' ? 'block' : 'none';
+    });
+
+    for (const comp of node.components) {
+      const compLabel = document.createElement('div');
+      let compName = comp.typeStr;
+      if (compName === 'MonoBehaviour') {
+        if (comp.properties.m_text !== undefined) compName = 'TextMeshProUGUI';
+        else if (comp.properties.m_Sprite !== undefined) compName = 'Image (Script)';
+        else compName = 'Script Component';
+      }
+      compLabel.textContent = `🧩 ${compName}`;
+      compLabel.style.color = '#9cdcfe'; // Unity component color in some themes
+      compLabel.style.fontSize = '12px';
+      compLabel.style.padding = '1px 4px';
+      compsContainer.appendChild(compLabel);
+    }
+    item.appendChild(compsContainer);
+  }
+
   for (const child of node.children) {
     childrenContainer.appendChild(buildHierarchyTree(child));
   }
@@ -100,17 +132,43 @@ function renderNode(node: HierarchyNode): HTMLElement | null {
   // Apply RectTransform styling
   applyRectTransform(el, rectTransform.properties);
 
+  // RectTransform outline
+  el.style.border = '1px solid red';
+
   // Simple rendering of specific components
-  const image = node.components.find(c => c.typeStr === 'Image');
+  const image = node.components.find(c => c.typeStr === 'Image' || (c.typeStr === 'MonoBehaviour' && c.properties.m_Sprite !== undefined));
   if (image) {
     const color = image.properties.m_Color;
     if (color) {
       el.style.backgroundColor = `rgba(${Math.round(color.r * 255)}, ${Math.round(color.g * 255)}, ${Math.round(color.b * 255)}, ${color.a})`;
     } else {
-      el.style.backgroundColor = '#ffffff';
+      el.style.backgroundColor = 'rgba(255, 255, 255, 0.5)'; // default translucent
     }
-    // Set border to make transparent images visible in debug
-    el.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+  }
+
+  // Text / TextMeshPro
+  const textComp = node.components.find(c => c.typeStr === 'Text' || (c.typeStr === 'MonoBehaviour' && c.properties.m_text !== undefined) || c.properties.m_Text !== undefined);
+  if (textComp) {
+    const textEl = document.createElement('div');
+    textEl.style.width = '100%';
+    textEl.style.height = '100%';
+    textEl.style.display = 'flex';
+    textEl.style.alignItems = 'center';
+    textEl.style.justifyContent = 'center';
+    textEl.style.overflow = 'hidden';
+    textEl.style.fontSize = (textComp.properties.m_fontSize || textComp.properties.m_FontSize || 14) + 'px';
+    
+    const textStr = textComp.properties.m_text || textComp.properties.m_Text || '';
+    textEl.textContent = textStr;
+    
+    const color = textComp.properties.m_fontColor || textComp.properties.m_Color;
+    if (color) {
+      textEl.style.color = `rgba(${Math.round(color.r * 255)}, ${Math.round(color.g * 255)}, ${Math.round(color.b * 255)}, ${color.a || 1})`;
+    } else {
+      textEl.style.color = '#fff';
+    }
+    
+    el.appendChild(textEl);
   }
 
   // Children
