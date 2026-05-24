@@ -1,9 +1,12 @@
 {
   "manifest_version": 3,
   "name": "Unity Asset Viewer",
-  "version": "1.0",
+  "version": "1.0.1",
   "description": "View Unity Prefabs in GitHub and GitLab MRs",
-  "permissions": ["activeTab", "scripting"],
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
   "action": {
     "default_title": "Unity Asset Viewer",
     "default_popup": "popup.html"
@@ -13,8 +16,13 @@
   },
   "content_scripts": [
     {
-      "matches": ["*://github.com/*", "*://gitlab.com/*"],
-      "js": ["content.js"]
+      "matches": [
+        "*://github.com/*",
+        "*://gitlab.com/*"
+      ],
+      "js": [
+        "content.js"
+      ]
     }
   ]
 }
