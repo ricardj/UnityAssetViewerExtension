@@ -1,0 +1,79 @@
+name: Build and Release Extensions
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers the workflow on any tag pushing that starts with 'v' (e.g. v1.0.0)
+
+permissions:
+  contents: write # Crucial: gives the Action permission to create releases and upload files
+
+jobs:
+  release:
+    name: Build & Publish Release Assets
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout the source code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Setup Node.js environment
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # 3. Install npm monorepo dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # 4. Build all packages in the workspaces
+      - name: Build all packages
+        run: npm run build
+
+      # 5. Extract extension versions from package.json files
+      - name: Extract Versions
+        id: get_versions
+        run: |
+          CHROME_VER=$(node -p "require('./packages/chrome-extension/package.json').version")
+          VSCODE_VER=$(node -p "require('./packages/vscode-extension/package.json').version")
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          
+          echo "CHROME_VER=$CHROME_VER" >> $GITHUB_OUTPUT
+          echo "VSCODE_VER=$VSCODE_VER" >> $GITHUB_OUTPUT
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_OUTPUT
+          
+          echo "Chrome Extension Version: $CHROME_VER"
+          echo "VS Code Extension Version: $VSCODE_VER"
+          echo "Tag Name: $TAG_NAME"
+
+      # 6. Package the Chrome Extension as a ZIP archive
+      - name: Package Chrome Extension
+        run: |
+          cd packages/chrome-extension
+          zip -r ../../chrome-extension-v${{ steps.get_versions.outputs.CHROME_VER }}.zip dist/
+          cd ../..
+
+      # 7. Package the VS Code Extension as a VSIX file using vsce
+      - name: Package VS Code Extension
+        run: |
+          cd packages/vscode-extension
+          # We use npx to run vsce without requiring it to be in devDependencies
+          npx @vscode/vsce package --out ../../unity-asset-viewer-v${{ steps.get_versions.outputs.VSCODE_VER }}.vsix
+          cd ../..
+
+      # 8. Create a GitHub Release and upload the packaged artifacts
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_versions.outputs.TAG_NAME }}
+          name: Release ${{ steps.get_versions.outputs.TAG_NAME }}
+          draft: false
+          prerelease: false
+          files: |
+            chrome-extension-v${{ steps.get_versions.outputs.CHROME_VER }}.zip
+            unity-asset-viewer-v${{ steps.get_versions.outputs.VSCODE_VER }}.vsix
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
