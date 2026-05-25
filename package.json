@@ -10,7 +10,10 @@
     "build": "npm run build --workspace=@unity-asset-viewer/core-parser && npm run build --workspace=@unity-asset-viewer/core-renderer && npm run build --workspace=@unity-asset-viewer/chrome-extension && npm run build --workspace=@unity-asset-viewer/vscode-extension",
     "test": "npm run test --workspace=@unity-asset-viewer/core-parser && npm run test --workspace=@unity-asset-viewer/core-renderer",
     "preview": "node scripts/preview.js",
-    "preview:default": "node scripts/preview.js unity-test-project/Assets/Prefab/SimpleSquare.prefab"
+    "preview:default": "node scripts/preview.js unity-test-project/Assets/Prefab/SimpleSquare.prefab",
+    "preview:layout-4-images": "node scripts/preview.js unity-test-project/Assets/Prefab/Layout4Images.prefab",
+    "preview:square-2-images": "node scripts/preview.js unity-test-project/Assets/Prefab/Square2Images.prefab",
+    "preview:square-2-images-variant": "node scripts/preview.js unity-test-project/Assets/Prefab/Square2ImagesVariant.prefab"
   },
   "keywords": [],
   "author": "",

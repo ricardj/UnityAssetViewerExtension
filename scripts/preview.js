@@ -47,7 +47,7 @@ console.log(`📂 Temp files created in: packages/core-renderer/temp/`);
 console.log('⚡ Starting Vite dev server...');
 
 const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-const <Down>iteProcess = spawn(npmCmd, ['run', 'dev', '--workspace=@unity-asset-viewer/core-renderer'], {
+const viteProcess = spawn(npmCmd, ['run', 'dev', '--workspace=@unity-asset-viewer/core-renderer'], {
   stdio: 'pipe',
   shell: true
 });
@@ -83,7 +83,7 @@ viteProcess.on('close', (code) => {
   process.exit(code);
 });
 
-function op<Dowh>hBrowser(url) {
+function openBrowser(url) {
   const startCmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
   exec(`${startCmd} ${url}`, (err) => {
     if (err) {

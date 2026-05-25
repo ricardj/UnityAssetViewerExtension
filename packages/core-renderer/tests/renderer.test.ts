@@ -132,7 +132,7 @@ describe('renderHierarchy – hierarchy tree', () => {
 });
 
 describe('renderHierarchy – visual rendering', () => {
-  it('renders RectTransform nodes with a red border', () => {
+  it('renders RectTransform nodes with a blue outline', () => {
     const node = makeRectNode('Panel');
     const el = renderHierarchy([node]);
     const viewport = el.querySelector('.unity-render-viewport')!;
@@ -141,7 +141,7 @@ describe('renderHierarchy – visual rendering', () => {
     // The rendered node lives inside the container
     const rendered = container.firstElementChild as HTMLElement;
     expect(rendered).not.toBeNull();
-    expect(rendered.style.border).toBe('1px solid red');
+    expect(rendered.style.outline).toBe('2px solid rgba(68, 140, 255, 0.7)');
   });
 
   it('applies backgroundColor for Image components with m_Color', () => {
@@ -261,7 +261,7 @@ describe('renderHierarchy – visual rendering', () => {
     // The outer element should contain the inner element
     const innerEl = outerEl.querySelector('.unity-go') as HTMLElement;
     expect(innerEl).not.toBeNull();
-    expect(innerEl.style.border).toBe('1px solid red');
+    expect(innerEl.style.outline).toBe('2px solid rgba(68, 140, 255, 0.7)');
   });
 });
 
