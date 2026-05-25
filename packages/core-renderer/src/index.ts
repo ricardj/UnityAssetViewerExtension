@@ -185,6 +185,8 @@ function buildHierarchyTree(node: HierarchyNode, scriptGuidMap?: Map<string, str
   label.setAttribute('data-id', node.gameObject.id);
   label.style.display = 'flex';
   label.style.alignItems = 'center';
+  label.style.cursor = 'pointer';
+  label.style.userSelect = 'none';
   
   const hasExpandableContent = (node.children && node.children.length > 0) || (node.components && node.components.length > 0);
   
@@ -194,12 +196,9 @@ function buildHierarchyTree(node: HierarchyNode, scriptGuidMap?: Map<string, str
   toggleIcon.style.fontSize = '10px';
   toggleIcon.style.width = '12px';
   toggleIcon.style.display = 'inline-block';
-  toggleIcon.style.cursor = hasExpandableContent ? 'pointer' : 'default';
-  toggleIcon.style.userSelect = 'none';
   
   const text = document.createElement('span');
   text.textContent = `🧊 ${node.gameObject.properties.m_Name || 'GameObject'}`;
-  text.style.cursor = 'pointer';
   text.style.padding = '2px 4px';
   text.style.borderRadius = '3px';
   text.style.flex = '1';
@@ -207,12 +206,12 @@ function buildHierarchyTree(node: HierarchyNode, scriptGuidMap?: Map<string, str
   label.appendChild(toggleIcon);
   label.appendChild(text);
   
-  text.addEventListener('mouseover', () => {
+  label.addEventListener('mouseover', () => {
     if (label.style.backgroundColor !== 'rgb(44, 93, 135)') {
       label.style.backgroundColor = '#444';
     }
   });
-  text.addEventListener('mouseout', () => {
+  label.addEventListener('mouseout', () => {
     if (label.style.backgroundColor !== 'rgb(44, 93, 135)') {
       label.style.backgroundColor = 'transparent';
     }
@@ -314,8 +313,8 @@ function buildHierarchyTree(node: HierarchyNode, scriptGuidMap?: Map<string, str
     childrenContainer.appendChild(buildHierarchyTree(child, scriptGuidMap));
   }
   
-  // Toggle expand/collapse
-  toggleIcon.addEventListener('click', (e) => {
+  // Toggle expand/collapse — clicking anywhere on the label row
+  label.addEventListener('click', (e) => {
     e.stopPropagation();
     if (hasExpandableContent) {
       const isCollapsed = childrenContainer.style.display === 'none';
