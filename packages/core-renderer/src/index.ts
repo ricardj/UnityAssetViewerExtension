@@ -118,6 +118,7 @@ export function renderHierarchy(nodes: HierarchyNode[], scriptGuidMap?: Map<stri
   wrapper.style.height = '100%';
   wrapper.style.fontFamily = 'sans-serif';
   wrapper.style.color = '#fff';
+  wrapper.style.overflow = 'hidden';
 
   // --- Left: Visual Render ---
   const viewport = document.createElement('div');
@@ -222,8 +223,54 @@ function buildHierarchyTree(node: HierarchyNode, scriptGuidMap?: Map<string, str
   // Container for components + child GameObjects
   const childrenContainer = document.createElement('div');
 
-  // Add components as child nodes under the GameObject
-  if (node.components && node.components.length > 0) {
+  // Add components as a collapsible sub-section
+  const hasComponents = node.components && node.components.length > 0;
+  if (hasComponents) {
+    const compSection = document.createElement('div');
+    compSection.style.paddingLeft = '14px';
+    compSection.style.marginTop = '1px';
+
+    // Components header with its own toggle
+    const compHeader = document.createElement('div');
+    compHeader.style.display = 'flex';
+    compHeader.style.alignItems = 'center';
+    compHeader.style.cursor = 'pointer';
+    compHeader.style.padding = '1px 4px';
+    compHeader.style.borderRadius = '3px';
+    compHeader.style.color = '#888';
+    compHeader.style.fontSize = '11px';
+    compHeader.style.userSelect = 'none';
+
+    const compToggle = document.createElement('span');
+    compToggle.textContent = '▶ ';
+    compToggle.style.marginRight = '4px';
+    compToggle.style.fontSize = '9px';
+    compToggle.style.width = '10px';
+    compToggle.style.display = 'inline-block';
+
+    const compHeaderText = document.createElement('span');
+    compHeaderText.textContent = `Components (${node.components.length})`;
+
+    compHeader.appendChild(compToggle);
+    compHeader.appendChild(compHeaderText);
+
+    compHeader.addEventListener('mouseover', () => {
+      compHeader.style.backgroundColor = '#444';
+    });
+    compHeader.addEventListener('mouseout', () => {
+      compHeader.style.backgroundColor = 'transparent';
+    });
+
+    const compList = document.createElement('div');
+    compList.style.display = 'none'; // collapsed by default
+
+    compHeader.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isCollapsed = compList.style.display === 'none';
+      compList.style.display = isCollapsed ? 'block' : 'none';
+      compToggle.textContent = isCollapsed ? '▼ ' : '▶ ';
+    });
+
     for (const comp of node.components) {
       const compItem = document.createElement('div');
       compItem.style.paddingLeft = '14px';
@@ -254,8 +301,12 @@ function buildHierarchyTree(node: HierarchyNode, scriptGuidMap?: Map<string, str
       });
       
       compItem.appendChild(compLabel);
-      childrenContainer.appendChild(compItem);
+      compList.appendChild(compItem);
     }
+
+    compSection.appendChild(compHeader);
+    compSection.appendChild(compList);
+    childrenContainer.appendChild(compSection);
   }
   
   // Add child GameObjects
@@ -303,8 +354,8 @@ function renderNode(node: HierarchyNode, isRoot: boolean = false): HTMLElement |
   }
 
   // Blue RectTransform wireframe outline (matching Unity's blue rect handles)
-  el.style.outline = '1px solid rgba(68, 140, 255, 0.6)';
-  el.style.outlineOffset = '-1px';
+  el.style.outline = '2px solid rgba(68, 140, 255, 0.7)';
+  el.style.outlineOffset = '-2px';
 
   // Apply visual components (Image, Text, etc.)
   applyVisualComponents(el, node);

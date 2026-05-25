@@ -71,7 +71,6 @@ async function renderPrefab(rawUrl: string, targetContainer: HTMLElement, button
     const renderEl = renderHierarchy(hierarchy, scriptGuidMap ?? undefined);
     
     renderEl.style.minHeight = '600px';
-    renderEl.style.borderTop = '1px solid #30363d';
     
     targetContainer.innerHTML = ''; 
     targetContainer.appendChild(renderEl);
