@@ -36,15 +36,22 @@ const KNOWN_SCRIPT_GUIDS: Record<string, string> = {
 /**
  * Derive a human-readable script name for a MonoBehaviour component.
  */
-function getScriptDisplayName(comp: UnityObject): string {
+function getScriptDisplayName(comp: UnityObject, scriptGuidMap?: Map<string, string>): string {
   // Check well-known property patterns first
   if (comp.properties.m_text !== undefined) return 'TextMeshProUGUI';
   if (comp.properties.m_Text !== undefined) return 'Text';
   if (comp.properties.m_Sprite !== undefined) return 'Image';
 
-  // Check the m_Script GUID against our known mapping
+  // Extract the m_Script GUID
   const scriptRef = comp.properties.m_Script;
   const guid: string = scriptRef?.guid ?? '';
+
+  // Check the local project's script map first (resolves custom scripts)
+  if (guid && scriptGuidMap?.has(guid)) {
+    return scriptGuidMap.get(guid)!;
+  }
+
+  // Fall back to well-known built-in Unity GUIDs
   if (guid && KNOWN_SCRIPT_GUIDS[guid]) {
     return KNOWN_SCRIPT_GUIDS[guid];
   }
@@ -65,7 +72,7 @@ function getScriptDisplayName(comp: UnityObject): string {
   return 'MonoBehaviour';
 }
 
-export function renderHierarchy(nodes: HierarchyNode[]): HTMLElement {
+export function renderHierarchy(nodes: HierarchyNode[], scriptGuidMap?: Map<string, string>): HTMLElement {
   const wrapper = document.createElement('div');
   wrapper.className = 'unity-viewer-layout';
   wrapper.style.display = 'flex';
@@ -117,7 +124,7 @@ export function renderHierarchy(nodes: HierarchyNode[]): HTMLElement {
   hierarchyPanel.appendChild(hierarchyTitle);
 
   for (const node of nodes) {
-    hierarchyPanel.appendChild(buildHierarchyTree(node));
+    hierarchyPanel.appendChild(buildHierarchyTree(node, scriptGuidMap));
   }
 
   wrapper.appendChild(viewport);
@@ -126,7 +133,7 @@ export function renderHierarchy(nodes: HierarchyNode[]): HTMLElement {
   return wrapper;
 }
 
-function buildHierarchyTree(node: HierarchyNode): HTMLElement {
+function buildHierarchyTree(node: HierarchyNode, scriptGuidMap?: Map<string, string>): HTMLElement {
   const item = document.createElement('div');
   item.style.paddingLeft = '14px'; // Indent for children
   item.style.marginTop = '2px';
@@ -161,7 +168,7 @@ function buildHierarchyTree(node: HierarchyNode): HTMLElement {
       const compLabel = document.createElement('div');
       let compName = comp.typeStr;
       if (compName === 'MonoBehaviour') {
-        compName = getScriptDisplayName(comp);
+        compName = getScriptDisplayName(comp, scriptGuidMap);
       }
       compLabel.textContent = `🧩 ${compName}`;
       compLabel.style.color = '#9cdcfe'; // Unity component color in some themes
@@ -173,7 +180,7 @@ function buildHierarchyTree(node: HierarchyNode): HTMLElement {
   }
 
   for (const child of node.children) {
-    childrenContainer.appendChild(buildHierarchyTree(child));
+    childrenContainer.appendChild(buildHierarchyTree(child, scriptGuidMap));
   }
   item.appendChild(childrenContainer);
   

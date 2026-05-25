@@ -1,6 +1,6 @@
 import { parseUnityYaml, buildHierarchy, applyModifications } from '@unity-asset-viewer/core-parser';
 import { renderHierarchy } from '@unity-asset-viewer/core-renderer';
-import { saveHandle, loadHandle, findPrefabByGuid } from './localRepo';
+import { saveHandle, loadHandle, findPrefabByGuid, buildScriptGuidMap, saveScriptMap, loadScriptMap } from './localRepo';
 
 console.log("Unity Asset Viewer content script loaded.");
 
@@ -13,12 +13,15 @@ async function renderPrefab(rawUrl: string, targetContainer: HTMLElement, button
     const yamlText = await response.text();
     
     let parsed = parseUnityYaml(yamlText);
+    let scriptGuidMap: Map<string, string> | null = null;
 
-    // VARIANT RESOLUTION
+    // Try to load a previously-saved directory handle
+    let handle = await loadHandle();
+
+    // VARIANT RESOLUTION — requires local repo access
     if (parsed.variantInfo) {
       button.textContent = '📂 Requesting Local Repo Access...';
       
-      let handle = await loadHandle();
       if (!handle) {
         alert('This is a Prefab Variant! We need to search your local Unity repository to find the base prefab.');
         handle = await (window as any).showDirectoryPicker();
@@ -41,10 +44,31 @@ async function renderPrefab(rawUrl: string, targetContainer: HTMLElement, button
         }
       }
     }
+
+    // SCRIPT NAME RESOLUTION — try to build / load from cache
+    if (handle) {
+      // Ensure we have read permissions
+      if (await (handle as any).queryPermission({ mode: 'read' }) === 'granted') {
+        button.textContent = '🔎 Resolving script names...';
+        try {
+          scriptGuidMap = await buildScriptGuidMap(handle);
+          // Cache for next time
+          await saveScriptMap(scriptGuidMap);
+        } catch (e) {
+          console.warn('Failed to scan local repo for script names, using cache', e);
+          scriptGuidMap = await loadScriptMap();
+        }
+      }
+    }
+
+    // If no live handle, try the cached map
+    if (!scriptGuidMap) {
+      scriptGuidMap = await loadScriptMap();
+    }
     
     const hierarchy = buildHierarchy(parsed.objects);
     console.log("Hierarchy Output:", hierarchy);
-    const renderEl = renderHierarchy(hierarchy);
+    const renderEl = renderHierarchy(hierarchy, scriptGuidMap ?? undefined);
     
     renderEl.style.minHeight = '600px';
     renderEl.style.borderTop = '1px solid #30363d';

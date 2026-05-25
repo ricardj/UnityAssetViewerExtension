@@ -264,3 +264,120 @@ describe('renderHierarchy – visual rendering', () => {
     expect(innerEl.style.border).toBe('1px solid red');
   });
 });
+
+describe('renderHierarchy – scriptGuidMap resolution', () => {
+  const CUSTOM_GUID = 'aabbccdd11223344aabbccdd11223344';
+
+  function makeMonoBehaviourNode(
+    name: string,
+    scriptGuid: string,
+    extraProps: any = {}
+  ): HierarchyNode {
+    const goId = String(Math.random()).slice(2, 8);
+    const rtId = String(Math.random()).slice(2, 8);
+    const mbId = String(Math.random()).slice(2, 8);
+    return {
+      gameObject: {
+        id: goId,
+        typeId: '1',
+        typeStr: 'GameObject',
+        properties: {
+          m_Name: name,
+          m_Component: [
+            { component: { fileID: Number(rtId) } },
+            { component: { fileID: Number(mbId) } },
+          ],
+        },
+      },
+      components: [
+        {
+          id: rtId,
+          typeId: '224',
+          typeStr: 'RectTransform',
+          properties: {
+            m_GameObject: { fileID: Number(goId) },
+            m_AnchorMin: { x: 0, y: 0 },
+            m_AnchorMax: { x: 1, y: 1 },
+            m_AnchoredPosition: { x: 0, y: 0 },
+            m_SizeDelta: { x: 0, y: 0 },
+            m_Pivot: { x: 0.5, y: 0.5 },
+          },
+        },
+        {
+          id: mbId,
+          typeId: '114',
+          typeStr: 'MonoBehaviour',
+          properties: {
+            m_Script: { fileID: 11500000, guid: scriptGuid, type: 3 },
+            ...extraProps,
+          },
+        },
+      ],
+      children: [],
+    };
+  }
+
+  it('resolves custom script GUIDs to class names from the map', () => {
+    const scriptMap = new Map<string, string>();
+    scriptMap.set(CUSTOM_GUID, 'MyCustomButton');
+
+    const node = makeMonoBehaviourNode('ButtonObj', CUSTOM_GUID);
+    const el = renderHierarchy([node], scriptMap);
+    const panel = el.querySelector('.unity-hierarchy-panel')!;
+
+    expect(panel.textContent).toContain('MyCustomButton');
+    expect(panel.textContent).not.toContain('Script (');
+    expect(panel.textContent).not.toContain('MonoBehaviour');
+  });
+
+  it('falls back to truncated GUID when map does not contain the GUID', () => {
+    const scriptMap = new Map<string, string>();
+    // Map is empty — GUID won't be found
+
+    const unknownGuid = 'ff00ff00ff00ff00ff00ff00ff00ff00';
+    const node = makeMonoBehaviourNode('UnknownScript', unknownGuid);
+    const el = renderHierarchy([node], scriptMap);
+    const panel = el.querySelector('.unity-hierarchy-panel')!;
+
+    expect(panel.textContent).toContain('Script (ff00ff00…)');
+  });
+
+  it('falls back to truncated GUID when no map is provided', () => {
+    const unknownGuid = 'ee11ee11ee11ee11ee11ee11ee11ee11';
+    const node = makeMonoBehaviourNode('NoMapScript', unknownGuid);
+    const el = renderHierarchy([node]);
+    const panel = el.querySelector('.unity-hierarchy-panel')!;
+
+    expect(panel.textContent).toContain('Script (ee11ee11…)');
+  });
+
+  it('prioritises scriptGuidMap over KNOWN_SCRIPT_GUIDS', () => {
+    // Override the built-in Image GUID with a custom name
+    const imageGuid = 'fe87c0e1cc204ed48ad3b37840f39efc';
+    const scriptMap = new Map<string, string>();
+    scriptMap.set(imageGuid, 'CustomImageOverride');
+
+    const node = makeMonoBehaviourNode('OverriddenImage', imageGuid);
+    const el = renderHierarchy([node], scriptMap);
+    const panel = el.querySelector('.unity-hierarchy-panel')!;
+
+    expect(panel.textContent).toContain('CustomImageOverride');
+  });
+
+  it('resolves multiple different custom scripts in a hierarchy', () => {
+    const guidA = '1111111111111111aaaaaaaaaaaaaaaa';
+    const guidB = '2222222222222222bbbbbbbbbbbbbbbb';
+    const scriptMap = new Map<string, string>();
+    scriptMap.set(guidA, 'HealthBar');
+    scriptMap.set(guidB, 'MiniMap');
+
+    const childA = makeMonoBehaviourNode('HealthUI', guidA);
+    const childB = makeMonoBehaviourNode('MapUI', guidB);
+    const root = makeRectNode('HUD', [childA, childB]);
+    const el = renderHierarchy([root], scriptMap);
+    const panel = el.querySelector('.unity-hierarchy-panel')!;
+
+    expect(panel.textContent).toContain('HealthBar');
+    expect(panel.textContent).toContain('MiniMap');
+  });
+});
