@@ -8,7 +8,9 @@
   ],
   "scripts": {
     "build": "npm run build --workspace=@unity-asset-viewer/core-parser && npm run build --workspace=@unity-asset-viewer/core-renderer && npm run build --workspace=@unity-asset-viewer/chrome-extension && npm run build --workspace=@unity-asset-viewer/vscode-extension",
-    "test": "npm run test --workspace=@unity-asset-viewer/core-parser && npm run test --workspace=@unity-asset-viewer/core-renderer"
+    "test": "npm run test --workspace=@unity-asset-viewer/core-parser && npm run test --workspace=@unity-asset-viewer/core-renderer",
+    "preview": "node scripts/preview.js",
+    "preview:default": "node scripts/preview.js unity-test-project/Assets/Prefab/SimpleSquare.prefab"
   },
   "keywords": [],
   "author": "",
