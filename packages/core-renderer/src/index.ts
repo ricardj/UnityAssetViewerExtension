@@ -33,6 +33,40 @@ const KNOWN_SCRIPT_GUIDS: Record<string, string> = {
   '2fafe2cfe61f6f942b0385e444a0a30a': 'DropdownTMP',
 };
 
+// Icons for well-known component types (matching Unity editor style)
+const COMPONENT_ICONS: Record<string, string> = {
+  'Transform': '🔄',
+  'RectTransform': '🔲',
+  'Canvas': '🖼️',
+  'CanvasRenderer': '🎨',
+  'CanvasScaler': '📐',
+  'GraphicRaycaster': '🎯',
+  'Image': '🖼️',
+  'RawImage': '🖼️',
+  'Text': '📝',
+  'TextMeshProUGUI': '📝',
+  'TextMeshPro': '📝',
+  'Button': '🔘',
+  'Toggle': '☑️',
+  'Slider': '🎚️',
+  'ScrollRect': '📜',
+  'InputField': '📝',
+  'InputFieldTMP': '📝',
+  'Dropdown': '📋',
+  'DropdownTMP': '📋',
+  'LayoutElement': '📐',
+  'HorizontalLayoutGroup': '↔️',
+  'VerticalLayoutGroup': '↕️',
+  'GridLayoutGroup': '⊞',
+  'ContentSizeFitter': '📏',
+  'AspectRatioFitter': '📏',
+  'Mask': '🎭',
+  'RectMask2D': '🎭',
+  'Outline': '✏️',
+  'Shadow': '🌑',
+  'MonoBehaviour': '📜',
+};
+
 /**
  * Derive a human-readable script name for a MonoBehaviour component.
  */
@@ -72,6 +106,10 @@ function getScriptDisplayName(comp: UnityObject, scriptGuidMap?: Map<string, str
   return 'MonoBehaviour';
 }
 
+function getComponentIcon(name: string): string {
+  return COMPONENT_ICONS[name] || '🧩';
+}
+
 export function renderHierarchy(nodes: HierarchyNode[], scriptGuidMap?: Map<string, string>): HTMLElement {
   const wrapper = document.createElement('div');
   wrapper.className = 'unity-viewer-layout';
@@ -81,7 +119,7 @@ export function renderHierarchy(nodes: HierarchyNode[], scriptGuidMap?: Map<stri
   wrapper.style.fontFamily = 'sans-serif';
   wrapper.style.color = '#fff';
 
-  // --- Center: Visual Render ---
+  // --- Left: Visual Render ---
   const viewport = document.createElement('div');
   viewport.className = 'unity-render-viewport';
   viewport.style.flex = '1';
@@ -99,15 +137,15 @@ export function renderHierarchy(nodes: HierarchyNode[], scriptGuidMap?: Map<stri
   container.style.bottom = '0';
   
   for (const node of nodes) {
-    const el = renderNode(node);
+    const el = renderNode(node, true);
     if (el) container.appendChild(el);
   }
   viewport.appendChild(container);
 
-  // --- Right: Hierarchy Panel ---
+  // --- Right: Hierarchy Panel (with components as tree children) ---
   const hierarchyPanel = document.createElement('div');
   hierarchyPanel.className = 'unity-hierarchy-panel';
-  hierarchyPanel.style.width = '250px';
+  hierarchyPanel.style.width = '280px';
   hierarchyPanel.style.backgroundColor = '#383838';
   hierarchyPanel.style.borderLeft = '1px solid #222';
   hierarchyPanel.style.overflowY = 'auto';
@@ -123,111 +161,22 @@ export function renderHierarchy(nodes: HierarchyNode[], scriptGuidMap?: Map<stri
   hierarchyTitle.style.borderBottom = '1px solid #222';
   hierarchyPanel.appendChild(hierarchyTitle);
 
-  // --- Far Right: Inspector Panel ---
-  const inspectorPanel = document.createElement('div');
-  inspectorPanel.className = 'unity-inspector-panel';
-  inspectorPanel.style.width = '300px';
-  inspectorPanel.style.backgroundColor = '#383838';
-  inspectorPanel.style.borderLeft = '1px solid #222';
-  inspectorPanel.style.overflowY = 'auto';
-  inspectorPanel.style.padding = '8px';
-  inspectorPanel.style.fontSize = '13px';
-  inspectorPanel.style.lineHeight = '1.4';
-
-  const inspectorTitle = document.createElement('div');
-  inspectorTitle.textContent = 'Inspector';
-  inspectorTitle.style.fontWeight = 'bold';
-  inspectorTitle.style.marginBottom = '10px';
-  inspectorTitle.style.paddingBottom = '4px';
-  inspectorTitle.style.borderBottom = '1px solid #222';
-  inspectorPanel.appendChild(inspectorTitle);
-
-  const inspectorContent = document.createElement('div');
-  inspectorContent.style.color = '#ccc';
-  inspectorContent.textContent = 'Select a GameObject to view its components.';
-  inspectorPanel.appendChild(inspectorContent);
-
-  const selectNode = (node: HierarchyNode) => {
-    // Clear previous selection highlight
-    wrapper.querySelectorAll('.unity-hierarchy-item').forEach(el => {
-      (el as HTMLElement).style.backgroundColor = 'transparent';
-    });
-    // Highlight current
-    const itemEl = wrapper.querySelector(`[data-id="${node.gameObject.id}"]`) as HTMLElement;
-    if (itemEl) itemEl.style.backgroundColor = '#2c5d87'; // Unity selection blue
-    
-    // Update inspector
-    inspectorContent.innerHTML = '';
-    
-    const header = document.createElement('div');
-    header.style.fontWeight = 'bold';
-    header.style.fontSize = '14px';
-    header.style.marginBottom = '12px';
-    header.style.color = '#fff';
-    header.textContent = `🧊 ${node.gameObject.properties.m_Name || 'GameObject'}`;
-    inspectorContent.appendChild(header);
-
-    if (!node.components || node.components.length === 0) {
-      const empty = document.createElement('div');
-      empty.textContent = 'No components attached.';
-      inspectorContent.appendChild(empty);
-      return;
-    }
-
-    for (const comp of node.components) {
-      const compBlock = document.createElement('div');
-      compBlock.style.backgroundColor = '#444';
-      compBlock.style.borderRadius = '4px';
-      compBlock.style.marginBottom = '8px';
-      compBlock.style.overflow = 'hidden';
-
-      const compHeader = document.createElement('div');
-      let compName = comp.typeStr;
-      if (compName === 'MonoBehaviour') {
-        compName = getScriptDisplayName(comp, scriptGuidMap);
-      }
-      compHeader.textContent = `🧩 ${compName}`;
-      compHeader.style.backgroundColor = '#555';
-      compHeader.style.padding = '4px 8px';
-      compHeader.style.fontWeight = 'bold';
-      compHeader.style.color = '#9cdcfe';
-      compBlock.appendChild(compHeader);
-
-      const propsList = document.createElement('div');
-      propsList.style.padding = '4px 8px';
-      propsList.style.fontSize = '12px';
-      propsList.style.whiteSpace = 'pre-wrap';
-      propsList.style.wordBreak = 'break-word';
-      
-      // Simple preview of stringified properties (omitting huge arrays if any)
-      const cleanProps = { ...comp.properties };
-      delete cleanProps.m_GameObject;
-      delete cleanProps.m_ObjectHideFlags;
-      delete cleanProps.m_CorrespondingSourceObject;
-      delete cleanProps.m_PrefabInstance;
-      delete cleanProps.m_PrefabAsset;
-      
-      propsList.textContent = JSON.stringify(cleanProps, null, 2);
-      compBlock.appendChild(propsList);
-
-      inspectorContent.appendChild(compBlock);
-    }
-  };
-
   for (const node of nodes) {
-    hierarchyPanel.appendChild(buildHierarchyTree(node, selectNode, scriptGuidMap));
+    hierarchyPanel.appendChild(buildHierarchyTree(node, scriptGuidMap));
   }
 
   wrapper.appendChild(viewport);
   wrapper.appendChild(hierarchyPanel);
-  wrapper.appendChild(inspectorPanel);
 
   return wrapper;
 }
 
-function buildHierarchyTree(node: HierarchyNode, onSelect: (n: HierarchyNode) => void, scriptGuidMap?: Map<string, string>): HTMLElement {
+/**
+ * Build the hierarchy tree with GameObjects AND their components as child nodes.
+ */
+function buildHierarchyTree(node: HierarchyNode, scriptGuidMap?: Map<string, string>): HTMLElement {
   const item = document.createElement('div');
-  item.style.paddingLeft = '14px'; // Indent for children
+  item.style.paddingLeft = '14px';
   item.style.marginTop = '2px';
   
   const label = document.createElement('div');
@@ -236,14 +185,16 @@ function buildHierarchyTree(node: HierarchyNode, onSelect: (n: HierarchyNode) =>
   label.style.display = 'flex';
   label.style.alignItems = 'center';
   
+  const hasExpandableContent = (node.children && node.children.length > 0) || (node.components && node.components.length > 0);
+  
   const toggleIcon = document.createElement('span');
-  const hasChildren = node.children && node.children.length > 0;
-  toggleIcon.textContent = hasChildren ? '▼ ' : '  ';
+  toggleIcon.textContent = hasExpandableContent ? '▼ ' : '  ';
   toggleIcon.style.marginRight = '4px';
   toggleIcon.style.fontSize = '10px';
   toggleIcon.style.width = '12px';
   toggleIcon.style.display = 'inline-block';
-  toggleIcon.style.cursor = hasChildren ? 'pointer' : 'default';
+  toggleIcon.style.cursor = hasExpandableContent ? 'pointer' : 'default';
+  toggleIcon.style.userSelect = 'none';
   
   const text = document.createElement('span');
   text.textContent = `🧊 ${node.gameObject.properties.m_Name || 'GameObject'}`;
@@ -256,7 +207,7 @@ function buildHierarchyTree(node: HierarchyNode, onSelect: (n: HierarchyNode) =>
   label.appendChild(text);
   
   text.addEventListener('mouseover', () => {
-    if (label.style.backgroundColor !== 'rgb(44, 93, 135)') { // If not selected
+    if (label.style.backgroundColor !== 'rgb(44, 93, 135)') {
       label.style.backgroundColor = '#444';
     }
   });
@@ -266,33 +217,70 @@ function buildHierarchyTree(node: HierarchyNode, onSelect: (n: HierarchyNode) =>
     }
   });
   
-  text.addEventListener('click', (e) => {
-    e.stopPropagation();
-    onSelect(node);
-  });
-  
   item.appendChild(label);
   
+  // Container for components + child GameObjects
   const childrenContainer = document.createElement('div');
+
+  // Add components as child nodes under the GameObject
+  if (node.components && node.components.length > 0) {
+    for (const comp of node.components) {
+      const compItem = document.createElement('div');
+      compItem.style.paddingLeft = '14px';
+      compItem.style.marginTop = '1px';
+      
+      const compLabel = document.createElement('div');
+      compLabel.className = 'unity-hierarchy-component';
+      compLabel.style.display = 'flex';
+      compLabel.style.alignItems = 'center';
+      compLabel.style.padding = '1px 4px';
+      compLabel.style.borderRadius = '3px';
+      compLabel.style.color = '#9cdcfe';
+      compLabel.style.fontSize = '12px';
+      
+      let compName = comp.typeStr;
+      if (compName === 'MonoBehaviour') {
+        compName = getScriptDisplayName(comp, scriptGuidMap);
+      }
+      
+      const icon = getComponentIcon(compName);
+      compLabel.textContent = `${icon} ${compName}`;
+      
+      compLabel.addEventListener('mouseover', () => {
+        compLabel.style.backgroundColor = '#444';
+      });
+      compLabel.addEventListener('mouseout', () => {
+        compLabel.style.backgroundColor = 'transparent';
+      });
+      
+      compItem.appendChild(compLabel);
+      childrenContainer.appendChild(compItem);
+    }
+  }
   
+  // Add child GameObjects
+  for (const child of node.children) {
+    childrenContainer.appendChild(buildHierarchyTree(child, scriptGuidMap));
+  }
+  
+  // Toggle expand/collapse
   toggleIcon.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (hasChildren) {
+    if (hasExpandableContent) {
       const isCollapsed = childrenContainer.style.display === 'none';
       childrenContainer.style.display = isCollapsed ? 'block' : 'none';
       toggleIcon.textContent = isCollapsed ? '▼ ' : '▶ ';
     }
   });
   
-  for (const child of node.children) {
-    childrenContainer.appendChild(buildHierarchyTree(child, onSelect, scriptGuidMap));
-  }
   item.appendChild(childrenContainer);
   
   return item;
 }
 
-function renderNode(node: HierarchyNode): HTMLElement | null {
+// ─── Visual Renderer ───────────────────────────────────────────────
+
+function renderNode(node: HierarchyNode, isRoot: boolean = false): HTMLElement | null {
   const rectTransform = node.components.find(c => c.typeStr === 'RectTransform');
   if (!rectTransform) {
     // Only UI objects have RectTransform, skip non-UI for now
@@ -303,26 +291,91 @@ function renderNode(node: HierarchyNode): HTMLElement | null {
   el.className = `unity-go unity-go-${node.gameObject.properties.m_Name?.replace(/[^a-zA-Z0-9-]/g, '-') || 'unnamed'}`;
   el.style.position = 'absolute';
   el.style.boxSizing = 'border-box';
-  
-  // Apply RectTransform styling
-  applyRectTransform(el, rectTransform.properties);
 
-  // RectTransform outline
-  el.style.border = '1px solid red';
+  const hasCanvas = node.components.some(c => c.typeStr === 'Canvas');
 
-  // Simple rendering of specific components
-  const image = node.components.find(c => c.typeStr === 'Image' || (c.typeStr === 'MonoBehaviour' && c.properties.m_Sprite !== undefined));
+  if (isRoot && hasCanvas) {
+    // Root Canvas: fill the entire viewport, like Unity's Screen Space - Overlay
+    applyRootCanvas(el, node);
+  } else {
+    // Standard RectTransform layout
+    applyRectTransform(el, rectTransform.properties);
+  }
+
+  // Blue RectTransform wireframe outline (matching Unity's blue rect handles)
+  el.style.outline = '1px solid rgba(68, 140, 255, 0.6)';
+  el.style.outlineOffset = '-1px';
+
+  // Apply visual components (Image, Text, etc.)
+  applyVisualComponents(el, node);
+
+  // Children
+  for (const child of node.children) {
+    const childEl = renderNode(child, false);
+    if (childEl) {
+      el.appendChild(childEl);
+    }
+  }
+
+  return el;
+}
+
+/**
+ * Root canvas fills the viewport like Unity's Screen Space - Overlay mode.
+ * We look at CanvasScaler reference resolution to determine the aspect ratio.
+ */
+function applyRootCanvas(el: HTMLElement, node: HierarchyNode) {
+  // Find CanvasScaler for reference resolution
+  const canvasScaler = node.components.find(c => {
+    if (c.typeStr === 'CanvasScaler') return true;
+    if (c.typeStr === 'MonoBehaviour') {
+      const guid = c.properties.m_Script?.guid;
+      return guid === '0cd44c1031e13a943bb63640046fad76';
+    }
+    return false;
+  });
+
+  let refWidth = 1920;
+  let refHeight = 1080;
+
+  if (canvasScaler) {
+    const refRes = canvasScaler.properties.m_ReferenceResolution;
+    if (refRes) {
+      refWidth = refRes.x || refWidth;
+      refHeight = refRes.y || refHeight;
+    }
+  }
+
+  // Fill viewport while maintaining reference resolution aspect ratio
+  el.style.left = '0';
+  el.style.top = '0';
+  el.style.width = '100%';
+  el.style.height = '100%';
+  el.style.position = 'relative';
+  el.style.overflow = 'hidden';
+}
+
+function applyVisualComponents(el: HTMLElement, node: HierarchyNode) {
+  // Image component
+  const image = node.components.find(c =>
+    c.typeStr === 'Image' ||
+    (c.typeStr === 'MonoBehaviour' && c.properties.m_Sprite !== undefined)
+  );
   if (image) {
     const color = image.properties.m_Color;
     if (color) {
       el.style.backgroundColor = `rgba(${Math.round(color.r * 255)}, ${Math.round(color.g * 255)}, ${Math.round(color.b * 255)}, ${color.a})`;
     } else {
-      el.style.backgroundColor = 'rgba(255, 255, 255, 0.5)'; // default translucent
+      el.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
     }
   }
 
   // Text / TextMeshPro
-  const textComp = node.components.find(c => c.typeStr === 'Text' || (c.typeStr === 'MonoBehaviour' && c.properties.m_text !== undefined) || c.properties.m_Text !== undefined);
+  const textComp = node.components.find(c =>
+    c.typeStr === 'Text' ||
+    (c.typeStr === 'MonoBehaviour' && c.properties.m_text !== undefined) ||
+    c.properties.m_Text !== undefined
+  );
   if (textComp) {
     const textEl = document.createElement('div');
     textEl.style.width = '100%';
@@ -345,47 +398,74 @@ function renderNode(node: HierarchyNode): HTMLElement | null {
     
     el.appendChild(textEl);
   }
-
-  // Children
-  for (const child of node.children) {
-    const childEl = renderNode(child);
-    if (childEl) {
-      el.appendChild(childEl);
-    }
-  }
-
-  return el;
 }
 
+/**
+ * Apply RectTransform positioning the Unity way.
+ *
+ * Unity RectTransform layout:
+ *   - Anchors (AnchorMin/AnchorMax) define a reference rectangle within the parent as fractions (0..1)
+ *   - When anchors are the same point → element has a fixed size (SizeDelta = width/height)
+ *   - When anchors form a rect → element stretches, SizeDelta becomes padding/insets
+ *   - AnchoredPosition is the offset of the pivot from the anchor center
+ *   - Pivot defines the element's own origin point (0..1)
+ *
+ * Unity uses a bottom-left origin system. In CSS we also use bottom-left by setting
+ * `bottom` and `left` instead of `top`.
+ */
 function applyRectTransform(el: HTMLElement, props: any) {
   const aMin = props.m_AnchorMin || { x: 0.5, y: 0.5 };
   const aMax = props.m_AnchorMax || { x: 0.5, y: 0.5 };
   const pivot = props.m_Pivot || { x: 0.5, y: 0.5 };
   const pos = props.m_AnchoredPosition || { x: 0, y: 0 };
-  const size = props.m_SizeDelta || { x: 0, y: 0 };
-
+  const size = props.m_SizeDelta || { x: 100, y: 100 };
   const scale = props.m_LocalScale || { x: 1, y: 1, z: 1 };
   const rotation = props.m_LocalRotation || { x: 0, y: 0, z: 0, w: 1 };
 
-  const anchorWidth = (aMax.x - aMin.x) * 100;
-  const anchorHeight = (aMax.y - aMin.y) * 100;
+  // Determine if anchors are a point (same min/max) or a stretch region
+  const isStretchX = Math.abs(aMax.x - aMin.x) > 0.001;
+  const isStretchY = Math.abs(aMax.y - aMin.y) > 0.001;
 
-  // Use CSS variables for width and height so we can reference them
-  el.style.setProperty('--w', `calc(${anchorWidth}% + ${size.x}px)`);
-  el.style.setProperty('--h', `calc(${anchorHeight}% + ${size.y}px)`);
-  
-  el.style.width = 'var(--w)';
-  el.style.height = 'var(--h)';
+  if (isStretchX) {
+    // Stretched horizontally: SizeDelta.x becomes negative inset (left/right padding)
+    // In Unity: left = anchorMin.x * parentWidth - sizeDelta.x * 0.5 (approx)
+    // More precisely, offsetMin.x and offsetMax.x are used
+    // offsetMin.x = anchoredPosition.x - sizeDelta.x * pivot.x
+    // offsetMax.x = anchoredPosition.x + sizeDelta.x * (1 - pivot.x)
+    const offsetMinX = pos.x - size.x * pivot.x;
+    const offsetMaxX = pos.x + size.x * (1 - pivot.x);
+    el.style.left = `calc(${aMin.x * 100}% + ${offsetMinX}px)`;
+    el.style.right = `calc(${(1 - aMax.x) * 100}% - ${offsetMaxX}px)`;
+    el.style.width = 'auto';
+  } else {
+    // Fixed width
+    el.style.width = `${size.x}px`;
+    // Left edge = anchor position + offset - pivot * size
+    el.style.left = `calc(${aMin.x * 100}% + ${pos.x}px - ${size.x * pivot.x}px)`;
+  }
 
-  // Calculate left and bottom edges exactly as Unity does.
-  // Left Edge = AnchorMinX + AnchoredPosX - SizeX * PivotX
-  el.style.left = `calc(${aMin.x * 100}% + ${pos.x}px - ${size.x * pivot.x}px)`;
-  el.style.bottom = `calc(${aMin.y * 100}% + ${pos.y}px - ${size.y * pivot.y}px)`;
+  if (isStretchY) {
+    // Stretched vertically (using bottom/top)
+    const offsetMinY = pos.y - size.y * pivot.y;
+    const offsetMaxY = pos.y + size.y * (1 - pivot.y);
+    el.style.bottom = `calc(${aMin.y * 100}% + ${offsetMinY}px)`;
+    el.style.top = `calc(${(1 - aMax.y) * 100}% - ${offsetMaxY}px)`;
+    el.style.height = 'auto';
+  } else {
+    // Fixed height
+    el.style.height = `${size.y}px`;
+    el.style.bottom = `calc(${aMin.y * 100}% + ${pos.y}px - ${size.y * pivot.y}px)`;
+  }
 
-  // CSS transform-origin Y is from the top, so we invert pivot.y
+  // CSS transform-origin: pivot.x from left, (1-pivot.y) from top (CSS Y is inverted)
   el.style.transformOrigin = `${pivot.x * 100}% ${(1 - pivot.y) * 100}%`;
+
+  let transformStr = '';
   
-  let transformStr = `scale(${scale.x}, ${scale.y})`;
+  // Apply scale
+  if (scale.x !== 1 || scale.y !== 1) {
+    transformStr += `scale(${scale.x}, ${scale.y})`;
+  }
   
   // Convert quaternion to 2D Z-rotation angle
   if (rotation.w !== undefined && rotation.z !== undefined) {
@@ -398,5 +478,7 @@ function applyRectTransform(el: HTMLElement, props: any) {
     }
   }
 
-  el.style.transform = transformStr;
+  if (transformStr.trim()) {
+    el.style.transform = transformStr.trim();
+  }
 }
