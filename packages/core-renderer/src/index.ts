@@ -81,7 +81,7 @@ export function renderHierarchy(nodes: HierarchyNode[], scriptGuidMap?: Map<stri
   wrapper.style.fontFamily = 'sans-serif';
   wrapper.style.color = '#fff';
 
-  // --- Left Side: Visual Render ---
+  // --- Center: Visual Render ---
   const viewport = document.createElement('div');
   viewport.className = 'unity-render-viewport';
   viewport.style.flex = '1';
@@ -104,11 +104,11 @@ export function renderHierarchy(nodes: HierarchyNode[], scriptGuidMap?: Map<stri
   }
   viewport.appendChild(container);
 
-  // --- Right Side: Hierarchy Panel ---
+  // --- Right: Hierarchy Panel ---
   const hierarchyPanel = document.createElement('div');
   hierarchyPanel.className = 'unity-hierarchy-panel';
-  hierarchyPanel.style.width = '300px';
-  hierarchyPanel.style.backgroundColor = '#383838'; // Unity Dark Theme
+  hierarchyPanel.style.width = '250px';
+  hierarchyPanel.style.backgroundColor = '#383838';
   hierarchyPanel.style.borderLeft = '1px solid #222';
   hierarchyPanel.style.overflowY = 'auto';
   hierarchyPanel.style.padding = '8px';
@@ -123,64 +123,169 @@ export function renderHierarchy(nodes: HierarchyNode[], scriptGuidMap?: Map<stri
   hierarchyTitle.style.borderBottom = '1px solid #222';
   hierarchyPanel.appendChild(hierarchyTitle);
 
+  // --- Far Right: Inspector Panel ---
+  const inspectorPanel = document.createElement('div');
+  inspectorPanel.className = 'unity-inspector-panel';
+  inspectorPanel.style.width = '300px';
+  inspectorPanel.style.backgroundColor = '#383838';
+  inspectorPanel.style.borderLeft = '1px solid #222';
+  inspectorPanel.style.overflowY = 'auto';
+  inspectorPanel.style.padding = '8px';
+  inspectorPanel.style.fontSize = '13px';
+  inspectorPanel.style.lineHeight = '1.4';
+
+  const inspectorTitle = document.createElement('div');
+  inspectorTitle.textContent = 'Inspector';
+  inspectorTitle.style.fontWeight = 'bold';
+  inspectorTitle.style.marginBottom = '10px';
+  inspectorTitle.style.paddingBottom = '4px';
+  inspectorTitle.style.borderBottom = '1px solid #222';
+  inspectorPanel.appendChild(inspectorTitle);
+
+  const inspectorContent = document.createElement('div');
+  inspectorContent.style.color = '#ccc';
+  inspectorContent.textContent = 'Select a GameObject to view its components.';
+  inspectorPanel.appendChild(inspectorContent);
+
+  const selectNode = (node: HierarchyNode) => {
+    // Clear previous selection highlight
+    wrapper.querySelectorAll('.unity-hierarchy-item').forEach(el => {
+      (el as HTMLElement).style.backgroundColor = 'transparent';
+    });
+    // Highlight current
+    const itemEl = wrapper.querySelector(`[data-id="${node.gameObject.id}"]`) as HTMLElement;
+    if (itemEl) itemEl.style.backgroundColor = '#2c5d87'; // Unity selection blue
+    
+    // Update inspector
+    inspectorContent.innerHTML = '';
+    
+    const header = document.createElement('div');
+    header.style.fontWeight = 'bold';
+    header.style.fontSize = '14px';
+    header.style.marginBottom = '12px';
+    header.style.color = '#fff';
+    header.textContent = `🧊 ${node.gameObject.properties.m_Name || 'GameObject'}`;
+    inspectorContent.appendChild(header);
+
+    if (!node.components || node.components.length === 0) {
+      const empty = document.createElement('div');
+      empty.textContent = 'No components attached.';
+      inspectorContent.appendChild(empty);
+      return;
+    }
+
+    for (const comp of node.components) {
+      const compBlock = document.createElement('div');
+      compBlock.style.backgroundColor = '#444';
+      compBlock.style.borderRadius = '4px';
+      compBlock.style.marginBottom = '8px';
+      compBlock.style.overflow = 'hidden';
+
+      const compHeader = document.createElement('div');
+      let compName = comp.typeStr;
+      if (compName === 'MonoBehaviour') {
+        compName = getScriptDisplayName(comp, scriptGuidMap);
+      }
+      compHeader.textContent = `🧩 ${compName}`;
+      compHeader.style.backgroundColor = '#555';
+      compHeader.style.padding = '4px 8px';
+      compHeader.style.fontWeight = 'bold';
+      compHeader.style.color = '#9cdcfe';
+      compBlock.appendChild(compHeader);
+
+      const propsList = document.createElement('div');
+      propsList.style.padding = '4px 8px';
+      propsList.style.fontSize = '12px';
+      propsList.style.whiteSpace = 'pre-wrap';
+      propsList.style.wordBreak = 'break-word';
+      
+      // Simple preview of stringified properties (omitting huge arrays if any)
+      const cleanProps = { ...comp.properties };
+      delete cleanProps.m_GameObject;
+      delete cleanProps.m_ObjectHideFlags;
+      delete cleanProps.m_CorrespondingSourceObject;
+      delete cleanProps.m_PrefabInstance;
+      delete cleanProps.m_PrefabAsset;
+      
+      propsList.textContent = JSON.stringify(cleanProps, null, 2);
+      compBlock.appendChild(propsList);
+
+      inspectorContent.appendChild(compBlock);
+    }
+  };
+
   for (const node of nodes) {
-    hierarchyPanel.appendChild(buildHierarchyTree(node, scriptGuidMap));
+    hierarchyPanel.appendChild(buildHierarchyTree(node, selectNode, scriptGuidMap));
   }
 
   wrapper.appendChild(viewport);
   wrapper.appendChild(hierarchyPanel);
+  wrapper.appendChild(inspectorPanel);
 
   return wrapper;
 }
 
-function buildHierarchyTree(node: HierarchyNode, scriptGuidMap?: Map<string, string>): HTMLElement {
+function buildHierarchyTree(node: HierarchyNode, onSelect: (n: HierarchyNode) => void, scriptGuidMap?: Map<string, string>): HTMLElement {
   const item = document.createElement('div');
   item.style.paddingLeft = '14px'; // Indent for children
   item.style.marginTop = '2px';
   
   const label = document.createElement('div');
-  label.textContent = `🧊 ${node.gameObject.properties.m_Name || 'GameObject'}`;
-  label.style.cursor = 'default';
-  label.style.padding = '2px 4px';
-  label.style.borderRadius = '3px';
-  label.addEventListener('mouseover', () => label.style.backgroundColor = '#444');
-  label.addEventListener('mouseout', () => label.style.backgroundColor = 'transparent');
+  label.className = 'unity-hierarchy-item';
+  label.setAttribute('data-id', node.gameObject.id);
+  label.style.display = 'flex';
+  label.style.alignItems = 'center';
+  
+  const toggleIcon = document.createElement('span');
+  const hasChildren = node.children && node.children.length > 0;
+  toggleIcon.textContent = hasChildren ? '▼ ' : '  ';
+  toggleIcon.style.marginRight = '4px';
+  toggleIcon.style.fontSize = '10px';
+  toggleIcon.style.width = '12px';
+  toggleIcon.style.display = 'inline-block';
+  toggleIcon.style.cursor = hasChildren ? 'pointer' : 'default';
+  
+  const text = document.createElement('span');
+  text.textContent = `🧊 ${node.gameObject.properties.m_Name || 'GameObject'}`;
+  text.style.cursor = 'pointer';
+  text.style.padding = '2px 4px';
+  text.style.borderRadius = '3px';
+  text.style.flex = '1';
+  
+  label.appendChild(toggleIcon);
+  label.appendChild(text);
+  
+  text.addEventListener('mouseover', () => {
+    if (label.style.backgroundColor !== 'rgb(44, 93, 135)') { // If not selected
+      label.style.backgroundColor = '#444';
+    }
+  });
+  text.addEventListener('mouseout', () => {
+    if (label.style.backgroundColor !== 'rgb(44, 93, 135)') {
+      label.style.backgroundColor = 'transparent';
+    }
+  });
+  
+  text.addEventListener('click', (e) => {
+    e.stopPropagation();
+    onSelect(node);
+  });
   
   item.appendChild(label);
   
   const childrenContainer = document.createElement('div');
   
-  // Render Components as collapsible children
-  if (node.components && node.components.length > 0) {
-    const compsContainer = document.createElement('div');
-    compsContainer.style.paddingLeft = '14px';
-    compsContainer.style.borderLeft = '1px dashed #555';
-    compsContainer.style.marginBottom = '4px';
-    compsContainer.style.display = 'none'; // collapsed by default
-    
-    label.style.cursor = 'pointer';
-    label.addEventListener('click', (e) => {
-      e.stopPropagation();
-      compsContainer.style.display = compsContainer.style.display === 'none' ? 'block' : 'none';
-    });
-
-    for (const comp of node.components) {
-      const compLabel = document.createElement('div');
-      let compName = comp.typeStr;
-      if (compName === 'MonoBehaviour') {
-        compName = getScriptDisplayName(comp, scriptGuidMap);
-      }
-      compLabel.textContent = `🧩 ${compName}`;
-      compLabel.style.color = '#9cdcfe'; // Unity component color in some themes
-      compLabel.style.fontSize = '12px';
-      compLabel.style.padding = '1px 4px';
-      compsContainer.appendChild(compLabel);
+  toggleIcon.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (hasChildren) {
+      const isCollapsed = childrenContainer.style.display === 'none';
+      childrenContainer.style.display = isCollapsed ? 'block' : 'none';
+      toggleIcon.textContent = isCollapsed ? '▼ ' : '▶ ';
     }
-    item.appendChild(compsContainer);
-  }
-
+  });
+  
   for (const child of node.children) {
-    childrenContainer.appendChild(buildHierarchyTree(child, scriptGuidMap));
+    childrenContainer.appendChild(buildHierarchyTree(child, onSelect, scriptGuidMap));
   }
   item.appendChild(childrenContainer);
   
@@ -259,6 +364,9 @@ function applyRectTransform(el: HTMLElement, props: any) {
   const pos = props.m_AnchoredPosition || { x: 0, y: 0 };
   const size = props.m_SizeDelta || { x: 0, y: 0 };
 
+  const scale = props.m_LocalScale || { x: 1, y: 1, z: 1 };
+  const rotation = props.m_LocalRotation || { x: 0, y: 0, z: 0, w: 1 };
+
   const anchorWidth = (aMax.x - aMin.x) * 100;
   const anchorHeight = (aMax.y - aMin.y) * 100;
 
@@ -269,7 +377,26 @@ function applyRectTransform(el: HTMLElement, props: any) {
   el.style.width = 'var(--w)';
   el.style.height = 'var(--h)';
 
-  // Calculate left and bottom edges based on anchor, position, and pivot
-  el.style.left = `calc(${aMin.x * 100}% + ${pos.x}px - calc(var(--w) * ${pivot.x}))`;
-  el.style.bottom = `calc(${aMin.y * 100}% + ${pos.y}px - calc(var(--h) * ${pivot.y}))`;
+  // Calculate left and bottom edges exactly as Unity does.
+  // Left Edge = AnchorMinX + AnchoredPosX - SizeX * PivotX
+  el.style.left = `calc(${aMin.x * 100}% + ${pos.x}px - ${size.x * pivot.x}px)`;
+  el.style.bottom = `calc(${aMin.y * 100}% + ${pos.y}px - ${size.y * pivot.y}px)`;
+
+  // CSS transform-origin Y is from the top, so we invert pivot.y
+  el.style.transformOrigin = `${pivot.x * 100}% ${(1 - pivot.y) * 100}%`;
+  
+  let transformStr = `scale(${scale.x}, ${scale.y})`;
+  
+  // Convert quaternion to 2D Z-rotation angle
+  if (rotation.w !== undefined && rotation.z !== undefined) {
+    let angleRad = 2 * Math.acos(Math.min(Math.max(rotation.w, -1), 1));
+    if (rotation.z < 0) angleRad = -angleRad;
+    const angleDeg = angleRad * (180 / Math.PI);
+    if (Math.abs(angleDeg) > 0.01) {
+      // CSS rotates clockwise, Unity positive Z is counter-clockwise
+      transformStr += ` rotate(${-angleDeg}deg)`;
+    }
+  }
+
+  el.style.transform = transformStr;
 }

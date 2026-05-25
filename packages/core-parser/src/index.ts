@@ -22,6 +22,26 @@ export interface ParsedPrefab {
   variantInfo?: PrefabVariantInfo;
 }
 
+function replaceBigInts(obj: any): any {
+  if (typeof obj === 'bigint') {
+    if (obj <= Number.MAX_SAFE_INTEGER && obj >= Number.MIN_SAFE_INTEGER) {
+      return Number(obj);
+    }
+    return obj.toString();
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(replaceBigInts);
+  }
+  if (obj !== null && typeof obj === 'object') {
+    const newObj: any = {};
+    for (const key in obj) {
+      newObj[key] = replaceBigInts(obj[key]);
+    }
+    return newObj;
+  }
+  return obj;
+}
+
 export function parseUnityYaml(yamlString: string): ParsedPrefab {
   const documents: UnityObject[] = [];
   let variantInfo: PrefabVariantInfo | undefined = undefined;
@@ -38,8 +58,9 @@ export function parseUnityYaml(yamlString: string): ParsedPrefab {
     const body = match[3];
     
     try {
-      const parsed = YAML.parse(body, { intAsBigInt: true });
+      let parsed = YAML.parse(body, { intAsBigInt: true });
       if (parsed) {
+        parsed = replaceBigInts(parsed);
         const typeStr = Object.keys(parsed)[0]; // e.g. "GameObject"
         documents.push({
           id,
@@ -53,7 +74,7 @@ export function parseUnityYaml(yamlString: string): ParsedPrefab {
             variantInfo = {
               basePrefabGuid: props.m_SourcePrefab.guid,
               modifications: props.m_Modification?.m_Modifications?.map((mod: any) => ({
-                targetFileId: mod.target?.fileID,
+                targetFileId: mod.target?.fileID?.toString(),
                 propertyPath: mod.propertyPath,
                 value: mod.value,
                 objectReference: mod.objectReference
@@ -150,7 +171,7 @@ export function applyModifications(baseParsed: ParsedPrefab, variantParsed: Pars
       }
       
       const lastPart = pathParts[pathParts.length - 1];
-      if (mod.objectReference !== undefined && mod.objectReference.fileID !== 0) {
+      if (mod.objectReference !== undefined && mod.objectReference.fileID !== 0 && mod.objectReference.fileID !== "0") {
         current[lastPart] = mod.objectReference;
       } else {
         current[lastPart] = mod.value;
