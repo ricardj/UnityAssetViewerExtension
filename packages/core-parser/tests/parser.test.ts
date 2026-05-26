@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import {
@@ -64,6 +64,38 @@ describe('parseUnityYaml', () => {
     const result = parseUnityYaml('%YAML 1.1\n%TAG !u! tag:unity3d.com,2011:\n');
     expect(result.objects).toEqual([]);
     expect(result.variantInfo).toBeUndefined();
+  });
+
+  it('handles exceptions during YAML parsing and continues to the next document', () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const malformedYaml = `
+--- !u!1 &1
+GameObject:
+  m_Name: ValidDoc
+--- !u!1 &2
+GameObject:
+  m_Name: InvalidDoc
+  [malformed array missing closing bracket
+--- !u!1 &3
+GameObject:
+  m_Name: AnotherValidDoc
+`;
+
+    const result = parseUnityYaml(malformedYaml);
+
+    expect(result.objects).toHaveLength(2);
+    expect(result.objects[0].id).toBe('1');
+    expect(result.objects[0].properties.m_Name).toBe('ValidDoc');
+    expect(result.objects[1].id).toBe('3');
+    expect(result.objects[1].properties.m_Name).toBe('AnotherValidDoc');
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Failed to parse document 2 of type 1',
+      expect.any(Error)
+    );
+
+    consoleSpy.mockRestore();
   });
 });
 
