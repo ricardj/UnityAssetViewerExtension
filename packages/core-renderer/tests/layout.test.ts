@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { renderHierarchy } from '../src/index';
-import { HierarchyNode, UnityObject } from '@unity-asset-viewer/core-parser';
+import { HierarchyNode, UnityObject, parseUnityYaml, buildHierarchy, applyModifications } from '@unity-asset-viewer/core-parser';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Helper to make a RectTransform component
 function makeRectTransform(id: string, goId: string, extraProps: any = {}): UnityObject {
