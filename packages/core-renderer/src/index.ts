@@ -6,7 +6,8 @@ export { UnityViewer } from './UnityViewer';
 export { HierarchyTreeBuilder } from './HierarchyTreeBuilder';
 export { RectTransformApplier } from './RectTransformApplier';
 export { VisualComponentRenderer } from './VisualComponentRenderer';
-export { LayoutGroupApplier, LayoutContext } from './LayoutGroupApplier';
+export { LayoutGroupApplier } from './LayoutGroupApplier';
+export type { LayoutContext } from './LayoutGroupApplier';
 export { ContentSizeFitterApplier } from './ContentSizeFitterApplier';
 
 /**
