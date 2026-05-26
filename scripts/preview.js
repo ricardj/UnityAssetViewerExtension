@@ -80,7 +80,7 @@ if (unityProjectRoot) {
           if (match) {
             const guid = match[1];
             // The actual asset file is the meta file path minus '.meta'
-            const assetPath = fullPath.slice(0, -5);
+            const assetPath = fullPath.slice(0, -5).replace(/\\/g, '/');
             // Verify the asset file exists before adding to map
             if (fs.existsSync(assetPath)) {
                guidMap[guid] = assetPath;

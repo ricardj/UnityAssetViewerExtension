@@ -409,6 +409,11 @@ function applyRootCanvas(el: HTMLElement, node: HierarchyNode) {
   el.style.overflow = 'hidden';
 }
 
+function getViteFsUrl(absolutePath: string): string {
+  const normalized = absolutePath.replace(/\\/g, '/');
+  return normalized.startsWith('/') ? `/@fs${normalized}` : `/@fs/${normalized}`;
+}
+
 function applyVisualComponents(el: HTMLElement, node: HierarchyNode, globalGuidMap?: Map<string, string>) {
   // Image component
   const image = node.components.find(c =>
@@ -425,7 +430,7 @@ function applyVisualComponents(el: HTMLElement, node: HierarchyNode, globalGuidM
     }
 
     if (spritePath) {
-      el.style.backgroundImage = `url('/@fs${spritePath}')`;
+      el.style.backgroundImage = `url('${getViteFsUrl(spritePath)}')`;
       el.style.backgroundSize = '100% 100%';
       el.style.backgroundRepeat = 'no-repeat';
       // If we have an image, clear any outline so it looks like a real image

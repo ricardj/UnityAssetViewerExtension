@@ -10,6 +10,11 @@ interface PreviewMeta {
   unityProjectRoot?: string;
 }
 
+function getViteFsUrl(absolutePath: string): string {
+  const normalized = absolutePath.replace(/\\/g, '/');
+  return normalized.startsWith('/') ? `/@fs${normalized}` : `/@fs/${normalized}`;
+}
+
 async function init() {
   let prefabText = samplePrefab;
   let filename = 'sample.prefab';
@@ -72,7 +77,7 @@ async function init() {
       const basePath = guidMap[baseGuid];
       if (basePath) {
         try {
-          const baseRes = await fetch('/@fs' + basePath);
+          const baseRes = await fetch(getViteFsUrl(basePath));
           if (baseRes.ok) {
             const baseText = await baseRes.text();
             const baseParsed = parseUnityYaml(baseText);
