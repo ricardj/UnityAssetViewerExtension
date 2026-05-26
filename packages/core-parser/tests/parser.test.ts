@@ -114,6 +114,33 @@ describe('buildHierarchy', () => {
     const roots = buildHierarchy([]);
     expect(roots).toEqual([]);
   });
+
+  it('handles Transform pointing to a nonexistent m_Father ID', () => {
+    const objects: UnityObject[] = [
+      {
+        id: '1',
+        typeId: '1',
+        typeStr: 'GameObject',
+        properties: {
+          m_Name: 'Orphan',
+          m_Component: [{ component: { fileID: '2' } }],
+        },
+      },
+      {
+        id: '2',
+        typeId: '4',
+        typeStr: 'Transform',
+        properties: {
+          m_GameObject: { fileID: '1' },
+          m_Father: { fileID: '999' }, // Nonexistent parent
+        },
+      },
+    ];
+
+    const roots = buildHierarchy(objects);
+    expect(roots).toHaveLength(1);
+    expect(roots[0].gameObject.properties.m_Name).toBe('Orphan');
+  });
 });
 
 describe('applyModifications', () => {
