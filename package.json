@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "build": "npm run build --workspace=@unity-asset-viewer/core-parser && npm run build --workspace=@unity-asset-viewer/core-renderer && npm run build --workspace=@unity-asset-viewer/chrome-extension && npm run build --workspace=@unity-asset-viewer/vscode-extension",
-    "test": "npm run test --workspace=@unity-asset-viewer/core-parser && npm run test --workspace=@unity-asset-viewer/core-renderer",
+    "test": "npm run test --workspace=@unity-asset-viewer/core-parser && npm run test --workspace=@unity-asset-viewer/core-renderer && npm run test --workspace=@unity-asset-viewer/chrome-extension",
     "preview": "node scripts/preview.js",
     "preview:default": "node scripts/preview.js unity-test-project/Assets/Prefab/SimpleSquare.prefab",
     "preview:layout-4-images": "node scripts/preview.js unity-test-project/Assets/Prefab/Layout4Images.prefab",
@@ -17,5 +17,8 @@
   },
   "keywords": [],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "vitest": "^4.1.7"
+  }
 }
