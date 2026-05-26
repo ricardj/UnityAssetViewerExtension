@@ -1,6 +1,5 @@
 {
-  "name": "vscode-extension",
-  "publisher": "unity-asset-viewer",
+  "name": "@unity-asset-viewer/vscode-extension",
   "displayName": "Unity Asset Viewer",
   "description": "Visual Studio Code extension to view Unity Prefabs",
   "version": "1.0.0",
