@@ -110,7 +110,7 @@ function getComponentIcon(name: string): string {
   return COMPONENT_ICONS[name] || '🧩';
 }
 
-export function renderHierarchy(nodes: HierarchyNode[], scriptGuidMap?: Map<string, string>): HTMLElement {
+export function renderHierarchy(nodes: HierarchyNode[], scriptGuidMap?: Map<string, string>, globalGuidMap?: Map<string, string>): HTMLElement {
   const wrapper = document.createElement('div');
   wrapper.className = 'unity-viewer-layout';
   wrapper.style.display = 'flex';
@@ -119,6 +119,9 @@ export function renderHierarchy(nodes: HierarchyNode[], scriptGuidMap?: Map<stri
   wrapper.style.fontFamily = 'sans-serif';
   wrapper.style.color = '#fff';
   wrapper.style.overflow = 'hidden';
+
+  // Make the global map available to applyVisualComponents
+  (renderHierarchy as any).currentGlobalGuidMap = globalGuidMap;
 
   // --- Left: Visual Render ---
   const viewport = document.createElement('div');
@@ -357,7 +360,8 @@ function renderNode(node: HierarchyNode, isRoot: boolean = false): HTMLElement |
   el.style.outlineOffset = '-2px';
 
   // Apply visual components (Image, Text, etc.)
-  applyVisualComponents(el, node);
+  const globalMap = (renderHierarchy as any).currentGlobalGuidMap as Map<string, string> | undefined;
+  applyVisualComponents(el, node, globalMap);
 
   // Children
   for (const child of node.children) {
@@ -405,7 +409,7 @@ function applyRootCanvas(el: HTMLElement, node: HierarchyNode) {
   el.style.overflow = 'hidden';
 }
 
-function applyVisualComponents(el: HTMLElement, node: HierarchyNode) {
+function applyVisualComponents(el: HTMLElement, node: HierarchyNode, globalGuidMap?: Map<string, string>) {
   // Image component
   const image = node.components.find(c =>
     c.typeStr === 'Image' ||
@@ -413,10 +417,31 @@ function applyVisualComponents(el: HTMLElement, node: HierarchyNode) {
   );
   if (image) {
     const color = image.properties.m_Color;
-    if (color) {
-      el.style.backgroundColor = `rgba(${Math.round(color.r * 255)}, ${Math.round(color.g * 255)}, ${Math.round(color.b * 255)}, ${color.a})`;
+    const spriteGuid = image.properties.m_Sprite?.guid;
+    let spritePath = '';
+
+    if (spriteGuid && globalGuidMap) {
+      spritePath = globalGuidMap.get(spriteGuid) || '';
+    }
+
+    if (spritePath) {
+      el.style.backgroundImage = `url('/@fs${spritePath}')`;
+      el.style.backgroundSize = '100% 100%';
+      el.style.backgroundRepeat = 'no-repeat';
+      // If we have an image, clear any outline so it looks like a real image
+      el.style.outline = 'none';
+
+      // Still apply color tint if present
+      if (color) {
+         // Could use mix-blend-mode or pseudo-element for true tinting, but background-color behind the image is simple
+         el.style.backgroundColor = `rgba(${Math.round(color.r * 255)}, ${Math.round(color.g * 255)}, ${Math.round(color.b * 255)}, ${color.a})`;
+      }
     } else {
-      el.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+      if (color) {
+        el.style.backgroundColor = `rgba(${Math.round(color.r * 255)}, ${Math.round(color.g * 255)}, ${Math.round(color.b * 255)}, ${color.a})`;
+      } else {
+        el.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+      }
     }
   }
 
