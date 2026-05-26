@@ -98,6 +98,16 @@ async function init() {
     
     // Convert guidMap object to Map
     const globalGuidMap = new Map(Object.entries(guidMap));
+    console.log(`GUID map loaded with ${globalGuidMap.size} entries`);
+
+    // Debug: log all Image component sprite GUIDs to verify they exist in the map
+    for (const obj of parsed.objects) {
+      if (obj.properties.m_Sprite?.guid) {
+        const guid = obj.properties.m_Sprite.guid;
+        const resolved = globalGuidMap.get(guid);
+        console.log(`Sprite GUID ${guid} → ${resolved ? getViteFsUrl(resolved) : '❌ NOT FOUND in guid-map'}`);
+      }
+    }
 
     // For script mapping, we can just use the same global map in the dev environment.
     const rootEl = renderHierarchy(hierarchy, globalGuidMap, globalGuidMap);
