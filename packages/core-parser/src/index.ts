@@ -55,7 +55,7 @@ export function parseUnityYaml(yamlString: string): ParsedPrefab {
   while ((match = docRegex.exec(yamlString)) !== null) {
     const typeId = match[1];
     const id = match[2] || '0';
-    const body = match[3];
+    const body = match[3].trim();
     
     try {
       let parsed = YAML.parse(body, { intAsBigInt: true });
