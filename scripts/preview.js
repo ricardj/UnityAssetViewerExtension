@@ -20,6 +20,24 @@ if (path.extname(absolutePrefabPath).toLowerCase() !== '.prefab') {
   process.exit(1);
 }
 
+// Find Unity Project Root
+let unityProjectRoot = null;
+let currentDir = path.dirname(absolutePrefabPath);
+
+while (currentDir !== path.parse(currentDir).root) {
+  if (fs.existsSync(path.join(currentDir, 'Assets'))) {
+    unityProjectRoot = currentDir;
+    break;
+  }
+  currentDir = path.dirname(currentDir);
+}
+
+if (!unityProjectRoot) {
+  console.warn('\x1b[33mWarning: Could not find Unity project root (no "Assets" folder found). Local resources may not load correctly.\x1b[0m');
+} else {
+  console.log(`\x1b[32m✔ Found Unity project root: ${unityProjectRoot}\x1b[0m`);
+}
+
 // Setup directories
 const rendererDir = path.resolve(__dirname, '../packages/core-renderer');
 const tempDir = path.join(rendererDir, 'tmp');
@@ -36,12 +54,54 @@ const destMeta = path.join(tempDir, 'preview-meta.json');
 const metadata = {
   filename: path.basename(absolutePrefabPath),
   originalPath: absolutePrefabPath,
+  unityProjectRoot: unityProjectRoot,
   timestamp: new Date().toISOString()
 };
 fs.writeFileSync(destMeta, JSON.stringify(metadata, null, 2));
 
+// Scan Unity project for GUIDs to map to file paths
+if (unityProjectRoot) {
+  console.log(`\n🔍 Scanning Unity project for assets...`);
+  const guidMap = {};
+  const skipDirs = ['Library', 'Temp', 'Logs', 'Obj', 'UserSettings', 'Packages', 'ProjectSettings', '.git'];
+
+  function scanDir(dir) {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        if (!skipDirs.includes(entry.name)) {
+          scanDir(path.join(dir, entry.name));
+        }
+      } else if (entry.isFile() && entry.name.endsWith('.meta')) {
+        const fullPath = path.join(dir, entry.name);
+        try {
+          const content = fs.readFileSync(fullPath, 'utf8');
+          const match = content.match(/guid:\s*([a-fA-F0-9]{32})/);
+          if (match) {
+            const guid = match[1];
+            // The actual asset file is the meta file path minus '.meta'
+            const assetPath = fullPath.slice(0, -5);
+            // Verify the asset file exists before adding to map
+            if (fs.existsSync(assetPath)) {
+               guidMap[guid] = assetPath;
+            }
+          }
+        } catch (err) {
+          // ignore read errors
+        }
+      }
+    }
+  }
+
+  scanDir(unityProjectRoot);
+
+  const destMap = path.join(tempDir, 'guid-map.json');
+  fs.writeFileSync(destMap, JSON.stringify(guidMap, null, 2));
+  console.log(`\x1b[32m✔ Created GUID map with ${Object.keys(guidMap).length} entries\x1b[0m`);
+}
+
 console.log(`\n\x1b[32m🚀 Preview target prepared: ${metadata.filename}\x1b[0m`);
-console.log(`📂 Temp files created in: packages/core-renderer/temp/`);
+console.log(`📂 Temp files created in: packages/core-renderer/tmp/`);
 
 // Start Vite dev server in the background
 console.log('⚡ Starting Vite dev server...');
