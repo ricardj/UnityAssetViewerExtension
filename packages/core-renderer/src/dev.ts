@@ -1,4 +1,4 @@
-import { parseUnityYaml, buildHierarchy } from '@unity-asset-viewer/core-parser';
+import { parseUnityYaml, buildHierarchy, applyModifications } from '@unity-asset-viewer/core-parser';
 import { renderHierarchy } from './index';
 
 import samplePrefab from '../../core-parser/tests/sample.prefab?raw';
@@ -7,6 +7,7 @@ interface PreviewMeta {
   filename: string;
   originalPath: string;
   timestamp: string;
+  unityProjectRoot?: string;
 }
 
 async function init() {
@@ -14,6 +15,7 @@ async function init() {
   let filename = 'sample.prefab';
   let isDefault = true;
   let prefabFolder = '/tmp'
+  let guidMap: Record<string, string> = {};
 
   try {
     // 1. Attempt to fetch preview metadata
@@ -27,6 +29,16 @@ async function init() {
       if (prefabRes.ok) {
         prefabText = await prefabRes.text();
         isDefault = false;
+      }
+
+      // 3. Fetch guid-map if available
+      try {
+        const guidMapRes = await fetch(prefabFolder + '/guid-map.json');
+        if (guidMapRes.ok) {
+          guidMap = await guidMapRes.json();
+        }
+      } catch (err) {
+        console.warn('Could not load guid-map.json', err);
       }
     }
   } catch (err) {
@@ -53,13 +65,37 @@ async function init() {
 
   // Parse and Render
   try {
-    const parsed = parseUnityYaml(prefabText);
+    let parsed = parseUnityYaml(prefabText);
+
+    if (parsed.variantInfo) {
+      const baseGuid = parsed.variantInfo.basePrefabGuid;
+      const basePath = guidMap[baseGuid];
+      if (basePath) {
+        try {
+          const baseRes = await fetch('/@fs' + basePath);
+          if (baseRes.ok) {
+            const baseText = await baseRes.text();
+            const baseParsed = parseUnityYaml(baseText);
+            parsed = applyModifications(baseParsed, parsed);
+          }
+        } catch (err) {
+           console.error("Failed to load base prefab from Vite server", err);
+        }
+      } else {
+        console.warn("Base prefab GUID not found in guid-map.json", baseGuid);
+      }
+    }
+
     console.log('Parsed Objects:', parsed.objects);
     
     const hierarchy = buildHierarchy(parsed.objects);
     console.log('Hierarchy:', hierarchy);
     
-    const rootEl = renderHierarchy(hierarchy);
+    // Convert guidMap object to Map
+    const globalGuidMap = new Map(Object.entries(guidMap));
+
+    // For script mapping, we can just use the same global map in the dev environment.
+    const rootEl = renderHierarchy(hierarchy, globalGuidMap, globalGuidMap);
     
     const appEl = document.getElementById('app')!;
     appEl.innerHTML = ''; // Clear loading state
