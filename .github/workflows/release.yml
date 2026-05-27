@@ -95,7 +95,7 @@ jobs:
             unity-asset-viewer-core-parser-${{ steps.get_versions.outputs.PARSER_VER }}.tgz
             unity-asset-viewer-core-renderer-${{ steps.get_versions.outputs.RENDERER_VER }}.tgz
 
-      # 11. Create a GitHub Release and upload all packaged artifacts
+      # 11. Create a GitHub Release and upload extension artifacts
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -106,7 +106,5 @@ jobs:
           files: |
             chrome-extension-v${{ steps.get_versions.outputs.CHROME_VER }}.zip
             unity-asset-viewer-v${{ steps.get_versions.outputs.VSCODE_VER }}.vsix
-            unity-asset-viewer-core-parser-${{ steps.get_versions.outputs.PARSER_VER }}.tgz
-            unity-asset-viewer-core-renderer-${{ steps.get_versions.outputs.RENDERER_VER }}.tgz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
