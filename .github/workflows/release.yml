@@ -67,7 +67,7 @@ jobs:
         run: |
           cd packages/vscode-extension
           # We use npx to run vsce without requiring it to be in devDependencies
-          npx @vscode/vsce package --out ../../unity-asset-viewer-v${{ steps.get_versions.outputs.VSCODE_VER }}.vsix
+          npx @vscode/vsce package --no-dependencies --allow-missing-repository --out ../../unity-asset-viewer-v${{ steps.get_versions.outputs.VSCODE_VER }}.vsix
           cd ../..
 
       # 8. Package the Core Parser library as an npm tarball

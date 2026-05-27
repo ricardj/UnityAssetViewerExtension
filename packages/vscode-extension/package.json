@@ -39,12 +39,11 @@
     "build": "vite build && vite build -c vite.webview.config.ts",
     "dev": "vite build --watch"
   },
-  "dependencies": {
-    "@unity-asset-viewer/core-parser": "^1.0.0",
-    "@unity-asset-viewer/core-renderer": "^1.0.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/vscode": "^1.80.0",
+    "@unity-asset-viewer/core-parser": "^1.0.0",
+    "@unity-asset-viewer/core-renderer": "^1.0.0",
     "typescript": "^5.0.0",
     "vite": "^5.0.0"
   }
