@@ -33,20 +33,26 @@ jobs:
       - name: Build all packages
         run: npm run build
 
-      # 5. Extract extension versions from package.json files
+      # 5. Extract extension and package versions from package.json files
       - name: Extract Versions
         id: get_versions
         run: |
           CHROME_VER=$(node -p "require('./packages/chrome-extension/package.json').version")
           VSCODE_VER=$(node -p "require('./packages/vscode-extension/package.json').version")
+          PARSER_VER=$(node -p "require('./packages/core-parser/package.json').version")
+          RENDERER_VER=$(node -p "require('./packages/core-renderer/package.json').version")
           TAG_NAME=${GITHUB_REF#refs/tags/}
           
           echo "CHROME_VER=$CHROME_VER" >> $GITHUB_OUTPUT
           echo "VSCODE_VER=$VSCODE_VER" >> $GITHUB_OUTPUT
+          echo "PARSER_VER=$PARSER_VER" >> $GITHUB_OUTPUT
+          echo "RENDERER_VER=$RENDERER_VER" >> $GITHUB_OUTPUT
           echo "TAG_NAME=$TAG_NAME" >> $GITHUB_OUTPUT
           
           echo "Chrome Extension Version: $CHROME_VER"
           echo "VS Code Extension Version: $VSCODE_VER"
+          echo "Core Parser Version: $PARSER_VER"
+          echo "Core Renderer Version: $RENDERER_VER"
           echo "Tag Name: $TAG_NAME"
 
       # 6. Package the Chrome Extension as a ZIP archive
@@ -64,7 +70,32 @@ jobs:
           npx @vscode/vsce package --out ../../unity-asset-viewer-v${{ steps.get_versions.outputs.VSCODE_VER }}.vsix
           cd ../..
 
-      # 8. Create a GitHub Release and upload the packaged artifacts
+      # 8. Package the Core Parser library as an npm tarball
+      - name: Package Core Parser
+        run: |
+          cd packages/core-parser
+          npm pack --pack-destination ../../
+          cd ../..
+
+      # 9. Package the Core Renderer library as an npm tarball
+      - name: Package Core Renderer
+        run: |
+          cd packages/core-renderer
+          npm pack --pack-destination ../../
+          cd ../..
+
+      # 10. Upload Build Artifacts to the Actions Run Summary
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: |
+            chrome-extension-v${{ steps.get_versions.outputs.CHROME_VER }}.zip
+            unity-asset-viewer-v${{ steps.get_versions.outputs.VSCODE_VER }}.vsix
+            unity-asset-viewer-core-parser-${{ steps.get_versions.outputs.PARSER_VER }}.tgz
+            unity-asset-viewer-core-renderer-${{ steps.get_versions.outputs.RENDERER_VER }}.tgz
+
+      # 11. Create a GitHub Release and upload all packaged artifacts
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -75,5 +106,7 @@ jobs:
           files: |
             chrome-extension-v${{ steps.get_versions.outputs.CHROME_VER }}.zip
             unity-asset-viewer-v${{ steps.get_versions.outputs.VSCODE_VER }}.vsix
+            unity-asset-viewer-core-parser-${{ steps.get_versions.outputs.PARSER_VER }}.tgz
+            unity-asset-viewer-core-renderer-${{ steps.get_versions.outputs.RENDERER_VER }}.tgz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
