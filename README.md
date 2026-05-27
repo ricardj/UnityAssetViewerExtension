@@ -68,7 +68,7 @@ npm run build --workspace=@unity-asset-viewer/core-renderer
 npm run build --workspace=@unity-asset-viewer/chrome-extension
 
 # VS Code extension only
-npm run build --workspace=@unity-asset-viewer/vscode-extension
+npm run build --workspace=unity-asset-viewer
 ```
 
 ## Using as a Chrome Extension
@@ -119,7 +119,7 @@ If a prefab is a Variant, the extension will prompt you to select your local Uni
 
 1. Build the extension:
    ```bash
-   npm run build --workspace=@unity-asset-viewer/vscode-extension
+   npm run build --workspace=unity-asset-viewer
    ```
 
 2. Open this repository in VS Code

@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace=@unity-asset-viewer/core-parser && npm run build --workspace=@unity-asset-viewer/core-renderer && npm run build --workspace=@unity-asset-viewer/chrome-extension && npm run build --workspace=@unity-asset-viewer/vscode-extension",
+    "build": "npm run build --workspace=@unity-asset-viewer/core-parser && npm run build --workspace=@unity-asset-viewer/core-renderer && npm run build --workspace=@unity-asset-viewer/chrome-extension && npm run build --workspace=unity-asset-viewer",
     "test": "npm run test --workspace=@unity-asset-viewer/core-parser && npm run test --workspace=@unity-asset-viewer/core-renderer && npm run test --workspace=@unity-asset-viewer/chrome-extension",
     "preview": "node scripts/preview.js",
     "preview:default": "node scripts/preview.js unity-test-project/Assets/Prefab/SimpleSquare.prefab",
