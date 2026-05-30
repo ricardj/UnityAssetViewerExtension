@@ -5,7 +5,7 @@ export default defineConfig({
         outDir: 'dist',
         emptyOutDir: false,
         lib: {
-            entry: 'src/extension.ts',
+            entry: 'src/VSCodeExtensionBootstrap.ts',
             formats: ['cjs'],
             fileName: () => 'extension.js'
         },

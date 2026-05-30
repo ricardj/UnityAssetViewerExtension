@@ -25,32 +25,31 @@ This repository is structured as an `npm workspaces` monorepo with a modularized
 ```
 unity-asset-viewer-extension/
 ├── packages/
-│   ├── core-parser/       # [Vanilla TS] Parses raw Unity YAML into standard HierarchyNode[]
+│   ├── core-parser/       # [Vanilla TS] Parses raw Unity YAML into standard IHierarchyNode[]
 │   │   ├── src/
-│   │   │   ├── core/      # Core parsing engine (YAML parser, hierarchy tree builder, variant modifications applier)
-│   │   │   ├── providers/ # Abstractions for repository access (e.g. LocalRepoProvider)
-│   │   │   ├── types/     # Type/Interface/Class definitions (HierarchyNode, UnityObject, ParsedPrefab, etc.)
+│   │   │   ├── core/      # Core parsing engines as PascalCase classes with static methods (UnityYamlParser, UnityPrefabHierarchyBuilder, UnityPrefabModificationApplier, UnityPrefabCompleteParser)
+│   │   │   ├── providers/ # Abstractions for repository access (e.g. ILocalRepoProvider)
+│   │   │   ├── types/     # Domain interfaces prefixed with capital I (IHierarchyNode, IUnityObject, IParsedPrefab, etc.) in separate files
 │   │   │   └── index.ts   # Package entrypoint (re-exports)
-│   ├── core-renderer/     # [Vanilla TS/HTML] Maps HierarchyNode[] to absolute HTML/CSS elements
+│   ├── core-renderer/     # [Vanilla TS/HTML] Maps IHierarchyNode[] to absolute HTML/CSS elements
 │   │   ├── src/
-│   │   │   ├── appliers/  # Layout and positioning logic (RectTransform, LayoutGroup, ContentSizeFitter)
-│   │   │   ├── components/# Visual elements & trees (UnityViewer, HierarchyTreeBuilder, VisualComponentRenderer)
-│   │   │   ├── context/   # Context helpers (LayoutContext)
-│   │   │   ├── dev/       # Under-development helpers, preview targets and mock repository providers
+│   │   │   ├── appliers/  # Layout appliers (RectTransformApplier, LayoutGroupApplier, ContentSizeFitterApplier)
+│   │   │   ├── components/# Visual elements & trees (UnityViewer, HierarchyTreeBuilder, VisualComponentRenderer, UnityHierarchyRenderer)
+│   │   │   ├── context/   # Layout context interface (ILayoutContext)
+│   │   │   ├── dev/       # Dev server (DevServerBootstrap, DevLocalRepoProvider, UnityVitePathResolver, IPreviewMeta)
 │   │   │   └── index.ts   # Package entrypoint (re-exports)
 │   ├── chrome-extension/  # [Chrome API] Injects into GitHub/GitLab PRs & blob pages
 │   │   ├── src/
-│   │   │   ├── repo/      # Local repository providers & file retrieval utilities
-│   │   │   ├── storage/   # Extension storage accessors (handles, script map, etc.)
-│   │   │   ├── content.ts # GitHub/GitLab page scraping & rendering script
-│   │   │   └── popup.ts   # Extension popup script
+│   │   │   ├── repo/      # Local repository providers & file resolvers (ChromeLocalRepoProvider, UnityScriptGuidMapBuilder, UnityAssetFileResolver, UnityPrefabFileResolver)
+│   │   │   ├── storage/   # Extension storage manager (ChromeExtensionStorageManager)
+│   │   │   ├── ChromeExtensionBackgroundService.ts # Extension background service script
+│   │   │   └── ChromeExtensionContentCoordinator.ts # GitHub/GitLab page scraping & rendering script coordinator
 │   └── vscode-extension/  # [VS Code API] Renders custom preview editors inside VS Code
 │       ├── src/
-│       │   ├── core/      # Activation and deactivation hooks
-│       │   ├── services/  # File & GUID map lookup services in workspace
-│       │   ├── webview-host/# Webview host & repo providers (getWebviewContent, etc.)
-│       │   ├── extension.ts # Extension entry point
-│       │   └── webview.ts # Inside-webview renderer hook
+│       │   ├── services/  # Workspace-specific lookups (VSCodeWorkspaceAssetResolver, VSCodeWorkspaceScriptGuidMapBuilder)
+│       │   ├── webview-host/# Webview host & repo providers (VSCodeWebviewContentGenerator, WebviewLocalRepoProvider)
+│       │   ├── VSCodeExtensionBootstrap.ts # VS Code extension entry point bootstrap class
+│       │   └── WebviewBootstrap.ts # Webview rendering and event communication bootstrap class
 ├── scripts/               # CLI scripts for local preview testing and GitHub Releases
 ├── .agents/               # Automation scripts for agent-guided builds/deployments
 └── package.json           # Root package.json defining workspaces
@@ -66,13 +65,13 @@ graph TD
     end
 
     subgraph Chrome/VS Code Host
-        CE[chrome-extension: content.ts]
-        VE[vscode-extension: extension.ts]
+        CE[chrome-extension: ChromeExtensionContentCoordinator]
+        VE[vscode-extension: VSCodeExtensionBootstrap]
     end
 
     subgraph Core Libraries (Environment Agnostic)
-        CP[core-parser: parseUnityYaml & buildHierarchy]
-        CR[core-renderer: renderHierarchy & UnityViewer]
+        CP[core-parser: UnityPrefabCompleteParser]
+        CR[core-renderer: UnityViewer & UnityHierarchyRenderer]
     end
 
     subgraph Local Workspace Access (Optional)
@@ -85,7 +84,7 @@ graph TD
     CE -->|Raw YAML| CP
     VE -->|Raw YAML| CP
     
-    CP -->|Parsed HierarchyNode[]| CR
+    CP -->|Parsed IHierarchyNode[]| CR
     
     CE -.->|Requires Variant Base GUID| FS
     FS -.->|Retrieves Base Prefab| CP
@@ -102,44 +101,49 @@ graph TD
 *   **Purpose**: Handles raw string manipulation of Unity `.prefab` files.
 *   **Key Concept**: Parses multi-document Unity YAML, matching documents by ClassID and FileID, then maps them into a logical tree.
 *   **Structure**:
-    *   `src/core/`: Contains the main parser implementation (`parseUnityYaml.ts`, `buildHierarchy.ts`, `applyModifications.ts`, `parsePrefabComplete.ts`).
-    *   `src/providers/`: Houses environment-agnostic repo providers like `LocalRepoProvider.ts`.
-    *   `src/types/`: Houses individual type definitions (`HierarchyNode.ts`, `ParsedPrefab.ts`, `PrefabVariantInfo.ts`, `UnityObject.ts`) in strict compliance with the single-class-per-file rule.
-*   **Key Functions**:
-    *   `parseUnityYaml(yamlString)` (in `src/core/parseUnityYaml.ts`): Splices multi-document YAML via custom regex `/--- !u!(\d+)...+/` and parses with the `yaml` npm package. Special handling replaces huge BigInts to safe Javascript numbers.
-    *   `buildHierarchy(objects)` (in `src/core/buildHierarchy.ts`): Iterates over the flattened list of documents, locating `GameObject` elements, mapping their respective `Transform`/`RectTransform` nodes, and constructing parent-child hierarchies.
-    *   `applyModifications(baseParsed, variantParsed)` (in `src/core/applyModifications.ts`): If a prefab is a *Variant*, this function takes the base prefab objects and overrides properties defined in the variant's `m_Modification` arrays.
+    *   `src/core/`: Contains the main parser implementation classes (`UnityYamlParser.ts`, `UnityPrefabHierarchyBuilder.ts`, `UnityPrefabModificationApplier.ts`, `UnityPrefabCompleteParser.ts`).
+    *   `src/providers/`: Houses environment-agnostic repo provider interfaces like `ILocalRepoProvider.ts`.
+    *   `src/types/`: Houses individual type/interface definitions (`IHierarchyNode.ts`, `IParsedPrefab.ts`, `IPrefabVariantInfo.ts`, `IUnityObject.ts`) in strict compliance with the single-class-per-file rule.
+*   **Key Classes**:
+    *   `UnityYamlParser` (in `src/core/UnityYamlParser.ts`): Splices multi-document YAML via custom regex `/--- !u!(\d+)...+/` and parses with the `yaml` npm package. Special handling replaces huge BigInts to safe Javascript numbers.
+    *   `UnityPrefabHierarchyBuilder` (in `src/core/UnityPrefabHierarchyBuilder.ts`): Iterates over the flattened list of documents, locating `GameObject` elements, mapping their respective `Transform`/`RectTransform` nodes, and constructing parent-child hierarchies.
+    *   `UnityPrefabModificationApplier` (in `src/core/UnityPrefabModificationApplier.ts`): If a prefab is a *Variant*, this class takes the base prefab objects and overrides properties defined in the variant's `m_Modification` arrays.
+    *   `UnityPrefabCompleteParser` (in `src/core/UnityPrefabCompleteParser.ts`): Orchestrates parsing, modification application, and hierarchy tree generation into a single unified flow.
 
 ### 2. `packages/core-renderer`
 *   **Purpose**: Constructs the double-pane container (Visual Viewport + Interactive Tree Hierarchy).
 *   **Structure**:
     *   `src/appliers/`: Absolute/flex/grid math appliers (`RectTransformApplier.ts`, `LayoutGroupApplier.ts`, `ContentSizeFitterApplier.ts`).
-    *   `src/components/`: DOM builders and render engines (`UnityViewer.ts`, `VisualComponentRenderer.ts`, `HierarchyTreeBuilder.ts`, `renderHierarchy.ts`).
-    *   `src/context/`: Domain-specific context handlers (`LayoutContext.ts`).
-    *   `src/dev/`: Isolated developer playground components (`DevLocalRepoProvider.ts`, `PreviewMeta.ts`, `dev.ts`, `env.d.ts`).
+    *   `src/components/`: DOM builders and render engines (`UnityViewer.ts`, `VisualComponentRenderer.ts`, `HierarchyTreeBuilder.ts`, `UnityHierarchyRenderer.ts`).
+    *   `src/context/`: Domain-specific context handlers (`ILayoutContext.ts`).
+    *   `src/dev/`: Isolated developer playground components (`DevLocalRepoProvider.ts`, `IPreviewMeta.ts`, `DevServerBootstrap.ts`, `UnityVitePathResolver.ts`, `env.d.ts`).
 *   **Key Components**:
-    *   `UnityViewer.ts` (in `src/components/UnityViewer.ts`): Standard entry point coordinating the two panes.
-    *   `RectTransformApplier.ts` (in `src/appliers/RectTransformApplier.ts`): Calculates pivot points, anchors, and positions, mapping them to CSS absolute layouts.
-    *   `LayoutGroupApplier.ts` (in `src/appliers/LayoutGroupApplier.ts`): Detects `VerticalLayoutGroup`, `HorizontalLayoutGroup`, and `GridLayoutGroup` and converts them to CSS Flexbox/Grid equivalents.
-    *   `ContentSizeFitterApplier.ts` (in `src/appliers/ContentSizeFitterApplier.ts`): Simulates Unity's content size fitting by letting children dynamically grow the parents horizontally or vertically.
-    *   `VisualComponentRenderer.ts` (in `src/components/VisualComponentRenderer.ts`): Draws the visuals (Text, Images, Raw wireframes) inside the absolute boxes.
+    *   `UnityViewer` (in `src/components/UnityViewer.ts`): Standard entry point coordinating the two panes.
+    *   `RectTransformApplier` (in `src/appliers/RectTransformApplier.ts`): Calculates pivot points, anchors, and positions, mapping them to CSS absolute layouts.
+    *   `LayoutGroupApplier` (in `src/appliers/LayoutGroupApplier.ts`): Detects `VerticalLayoutGroup`, `HorizontalLayoutGroup`, and `GridLayoutGroup` and converts them to CSS Flexbox/Grid equivalents.
+    *   `ContentSizeFitterApplier` (in `src/appliers/ContentSizeFitterApplier.ts`): Simulates Unity's content size fitting by letting children dynamically grow the parents horizontally or vertically.
+    *   `VisualComponentRenderer` (in `src/components/VisualComponentRenderer.ts`): Draws the visuals (Text, Images, Raw wireframes) inside the absolute boxes.
+    *   `UnityHierarchyRenderer` (in `src/components/UnityHierarchyRenderer.ts`): Implements static hierarchical traversal to render node elements under layout context constraints.
 
 ### 3. `packages/chrome-extension`
-*   **Purpose**: Content script injected into GitHub (`github.com`) and GitLab (`gitlab.com`).
+*   **Purpose**: Extension injected into GitHub (`github.com`) and GitLab (`gitlab.com`) pull and merge requests.
 *   **Structure**:
-    *   `src/repo/`: Storage and FS API interfaces (`ChromeLocalRepoProvider.ts`, `buildScriptGuidMap.ts`, `findAssetFileByGuid.ts`, `findPrefabByGuid.ts`).
-    *   `src/storage/`: IndexedDB / Chrome extension state handlers (`loadHandle.ts`, `loadScriptMap.ts`, `saveHandle.ts`, `saveScriptMap.ts`).
+    *   `src/repo/`: Storage and FS API interfaces (`ChromeLocalRepoProvider.ts`, `UnityScriptGuidMapBuilder.ts`, `UnityAssetFileResolver.ts`, `UnityPrefabFileResolver.ts`).
+    *   `src/storage/`: Consolidates IndexedDB and local extension storage accessors in `ChromeExtensionStorageManager.ts`.
+    *   `src/ChromeExtensionBackgroundService.ts`: Wrap popup listener and extension setup lifecycles in a dedicated service class.
+    *   `src/ChromeExtensionContentCoordinator.ts`: Handles GitHub/GitLab page scraping & rendering in a coordinator class.
 *   **Key Behavior**:
     *   Injects an `👁️ Render UI Prefab` button adjacent to `.prefab` file headers.
     *   Supports the **File System Access API (`showDirectoryPicker`)** allowing users to grant access to their local project directory to automatically resolve Prefab Variants and script name maps on the fly!
-    *   Caches local directory handles inside Chrome's IndexedDB and script GUID mappings inside local extension storage for quick reloading.
+    *   Caches local directory handles inside Chrome's IndexedDB and script GUID mappings inside local extension storage for quick reloading via `ChromeExtensionStorageManager`.
 
 ### 4. `packages/vscode-extension`
 *   **Purpose**: Visual Studio Code Custom Editor provider.
 *   **Structure**:
-    *   `src/core/`: Bootstrapping hooks (`activate.ts`, `deactivate.ts`).
-    *   `src/services/`: Local file lookups (`findFileByGuidInWorkspace.ts`, `getScriptGuidMapInWorkspace.ts`).
-    *   `src/webview-host/`: Inside-VS-Code sidecar controllers (`WebviewLocalRepoProvider.ts`, `getWebviewContent.ts`).
+    *   `src/services/`: Local file lookups (`VSCodeWorkspaceAssetResolver.ts`, `VSCodeWorkspaceScriptGuidMapBuilder.ts`).
+    *   `src/webview-host/`: Inside-VS-Code sidecar controllers (`WebviewLocalRepoProvider.ts`, `VSCodeWebviewContentGenerator.ts`).
+    *   `src/VSCodeExtensionBootstrap.ts`: Activation and deactivation hooks wrapper class.
+    *   `src/WebviewBootstrap.ts`: Inside-webview message-parsing and renderer bootstrap controller.
 *   **Key Behavior**:
     *   Registers command `unityAssetViewer.showPreview`.
     *   Launches a Webview panel beside the active prefab text editor and posts the document text to it.

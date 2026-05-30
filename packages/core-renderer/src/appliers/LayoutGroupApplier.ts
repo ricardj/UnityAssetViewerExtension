@@ -1,6 +1,6 @@
-import { UnityObject, HierarchyNode } from '@unity-asset-viewer/core-parser';
+import { IUnityObject, IHierarchyNode } from '@unity-asset-viewer/core-parser';
 import { RectTransformApplier } from './RectTransformApplier';
-import { LayoutContext } from '../context/LayoutContext';
+import { ILayoutContext } from '../context/ILayoutContext';
 
 const LAYOUT_GUIDS = {
   HORIZONTAL: '3245ec927659c4140ac6dcff0d3908b4',
@@ -16,7 +16,7 @@ export class LayoutGroupApplier {
   /**
    * Identifies if a node contains a layout group component.
    */
-  public static getLayoutComponent(node: HierarchyNode): UnityObject | undefined {
+  public static getLayoutComponent(node: IHierarchyNode): IUnityObject | undefined {
     return node.components.find(
       c =>
         c.typeStr === 'HorizontalLayoutGroup' ||
@@ -31,9 +31,9 @@ export class LayoutGroupApplier {
 
   /**
    * Applies the layout group styles to the container element.
-   * Returns a LayoutContext to pass to child elements.
+   * Returns a ILayoutContext to pass to child elements.
    */
-  public static apply(el: HTMLElement, node: HierarchyNode): LayoutContext | undefined {
+  public static apply(el: HTMLElement, node: IHierarchyNode): ILayoutContext | undefined {
     const layout = this.getLayoutComponent(node);
     if (!layout) return undefined;
 
@@ -127,7 +127,7 @@ export class LayoutGroupApplier {
   /**
    * Applies CSS styles to child elements belonging to a layout group container.
    */
-  public static applyChildStyles(el: HTMLElement, props: any, context: LayoutContext): void {
+  public static applyChildStyles(el: HTMLElement, props: any, context: ILayoutContext): void {
     if (!context.isLayoutChild) return;
 
     RectTransformApplier.applyLayoutChildOverride(

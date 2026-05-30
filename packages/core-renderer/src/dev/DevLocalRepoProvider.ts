@@ -1,17 +1,13 @@
-import { LocalRepoProvider } from '@unity-asset-viewer/core-parser';
+import { ILocalRepoProvider } from '@unity-asset-viewer/core-parser';
+import { UnityVitePathResolver } from './UnityVitePathResolver';
 
-export function getViteFsUrl(absolutePath: string): string {
-  const normalized = absolutePath.replace(/\\/g, '/');
-  return normalized.startsWith('/') ? `/@fs${normalized}` : `/@fs/${normalized}`;
-}
-
-export class DevLocalRepoProvider implements LocalRepoProvider {
+export class DevLocalRepoProvider implements ILocalRepoProvider {
   constructor(private guidMap: Record<string, string>) {}
 
   async findPrefabByGuid(guid: string): Promise<string | null> {
     const path = this.guidMap[guid];
     if (!path) return null;
-    const res = await fetch(getViteFsUrl(path));
+    const res = await fetch(UnityVitePathResolver.getViteFsUrl(path));
     return res.ok ? res.text() : null;
   }
 
@@ -21,6 +17,6 @@ export class DevLocalRepoProvider implements LocalRepoProvider {
 
   async resolveAssetUrl(guid: string): Promise<string | null> {
     const path = this.guidMap[guid];
-    return path ? getViteFsUrl(path) : null;
+    return path ? UnityVitePathResolver.getViteFsUrl(path) : null;
   }
 }

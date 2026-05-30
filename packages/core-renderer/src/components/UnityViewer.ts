@@ -1,8 +1,8 @@
-import { HierarchyNode, UnityObject } from '@unity-asset-viewer/core-parser';
+import { IHierarchyNode } from '@unity-asset-viewer/core-parser';
 import { RectTransformApplier } from '../appliers/RectTransformApplier';
 import { VisualComponentRenderer } from './VisualComponentRenderer';
 import { LayoutGroupApplier } from '../appliers/LayoutGroupApplier';
-import { LayoutContext } from '../context/LayoutContext';
+import { ILayoutContext } from '../context/ILayoutContext';
 import { ContentSizeFitterApplier } from '../appliers/ContentSizeFitterApplier';
 import { HierarchyTreeBuilder } from './HierarchyTreeBuilder';
 
@@ -15,7 +15,7 @@ export class UnityViewer {
    * Main entry point to render a hierarchy tree into a two-panel HTMLElement view.
    */
   public static render(
-    nodes: HierarchyNode[],
+    nodes: IHierarchyNode[],
     scriptGuidMap?: Map<string, string>,
     globalGuidMap?: Map<string, string>
   ): HTMLElement {
@@ -84,9 +84,9 @@ export class UnityViewer {
    * Recursively renders a GameObject node and its children.
    */
   private static renderNode(
-    node: HierarchyNode,
+    node: IHierarchyNode,
     isRoot: boolean,
-    parentLayoutContext?: LayoutContext,
+    parentLayoutContext?: ILayoutContext,
     globalGuidMap?: Map<string, string>
   ): HTMLElement | null {
     const rectTransform = node.components.find(c => c.typeStr === 'RectTransform');
@@ -143,7 +143,7 @@ export class UnityViewer {
   /**
    * Root Canvas scaling: fills the viewport while keeping reference aspect ratio
    */
-  private static applyRootCanvas(el: HTMLElement, node: HierarchyNode): void {
+  private static applyRootCanvas(el: HTMLElement, node: IHierarchyNode): void {
     const canvasScaler = node.components.find(c => {
       if (c.typeStr === 'CanvasScaler') return true;
       if (c.typeStr === 'MonoBehaviour') {

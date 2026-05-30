@@ -4,8 +4,8 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        content: 'src/content.ts',
-        background: 'src/background.ts'
+        content: 'src/ChromeExtensionContentCoordinator.ts',
+        background: 'src/ChromeExtensionBackgroundService.ts'
       },
       output: {
         entryFileNames: '[name].js',

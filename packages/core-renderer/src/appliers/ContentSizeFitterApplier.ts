@@ -1,4 +1,4 @@
-import { UnityObject, HierarchyNode } from '@unity-asset-viewer/core-parser';
+import { IUnityObject, IHierarchyNode } from '@unity-asset-viewer/core-parser';
 
 const CONTENT_SIZE_FITTER_GUID = 'ef17fee4e8e2aa44ab1a2cd626e38a6a';
 
@@ -10,7 +10,7 @@ export class ContentSizeFitterApplier {
   /**
    * Applies the ContentSizeFitter sizing properties to the given HTML element.
    */
-  public static apply(el: HTMLElement, node: HierarchyNode): void {
+  public static apply(el: HTMLElement, node: IHierarchyNode): void {
     const fitter = node.components.find(
       c =>
         c.typeStr === 'ContentSizeFitter' ||

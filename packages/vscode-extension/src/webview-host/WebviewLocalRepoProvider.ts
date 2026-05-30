@@ -1,8 +1,8 @@
-import { LocalRepoProvider } from '@unity-asset-viewer/core-parser';
+import { ILocalRepoProvider } from '@unity-asset-viewer/core-parser';
 
 declare function acquireVsCodeApi(): any;
 
-export class WebviewLocalRepoProvider implements LocalRepoProvider {
+export class WebviewLocalRepoProvider implements ILocalRepoProvider {
   private messageIdCounter = 0;
   private pendingRequests = new Map<number, { resolve: (val: any) => void; reject: (err: any) => void }>();
   private vscode: any;

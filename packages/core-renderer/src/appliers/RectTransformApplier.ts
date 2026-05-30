@@ -1,4 +1,4 @@
-import { UnityObject } from '@unity-asset-viewer/core-parser';
+import { IUnityObject } from '@unity-asset-viewer/core-parser';
 
 /**
  * RectTransformApplier handles translating Unity's RectTransform properties

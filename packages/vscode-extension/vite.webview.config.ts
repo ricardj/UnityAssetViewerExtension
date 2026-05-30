@@ -5,7 +5,7 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: false,
     rollupOptions: {
-      input: 'src/webview.ts',
+      input: 'src/WebviewBootstrap.ts',
       output: {
         entryFileNames: 'webview.js',
         format: 'iife'

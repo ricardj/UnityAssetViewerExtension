@@ -1,4 +1,4 @@
-import { UnityObject, HierarchyNode } from '@unity-asset-viewer/core-parser';
+import { IUnityObject, IHierarchyNode } from '@unity-asset-viewer/core-parser';
 
 /**
  * HierarchyTreeBuilder manages the rendering of the right-hand hierarchy tree view
@@ -71,7 +71,7 @@ export class HierarchyTreeBuilder {
    * Translates a MonoBehaviour script component to its resolved display name.
    */
   public static getScriptDisplayName(
-    comp: UnityObject,
+    comp: IUnityObject,
     scriptGuidMap?: Map<string, string>
   ): string {
     if (comp.properties.m_text !== undefined) return 'TextMeshProUGUI';
@@ -110,7 +110,7 @@ export class HierarchyTreeBuilder {
    * Generates the collapsible tree DOM element for a GameObject and its children.
    */
   public static build(
-    node: HierarchyNode,
+    node: IHierarchyNode,
     scriptGuidMap?: Map<string, string>
   ): HTMLElement {
     const item = document.createElement('div');

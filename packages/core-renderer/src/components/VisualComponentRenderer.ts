@@ -1,17 +1,12 @@
-import { UnityObject, HierarchyNode } from '@unity-asset-viewer/core-parser';
+import { IUnityObject, IHierarchyNode } from '@unity-asset-viewer/core-parser';
+import { UnityVitePathResolver } from '../dev/UnityVitePathResolver';
 
 /**
  * VisualComponentRenderer is responsible for rendering visual elements on
  * the GameObject, such as Images, RawImages, Texts, and TextMeshPro components.
  */
 export class VisualComponentRenderer {
-  /**
-   * Helper to normalize Windows absolute paths for the Vite filesystem dev server.
-   */
-  public static getViteFsUrl(absolutePath: string): string {
-    const normalized = absolutePath.replace(/\\/g, '/');
-    return normalized.startsWith('/') ? `/@fs${normalized}` : `/@fs/${normalized}`;
-  }
+
 
   /**
    * Applies the visual components (Image, Text, etc.) found in the hierarchy node
@@ -19,7 +14,7 @@ export class VisualComponentRenderer {
    */
   public static apply(
     el: HTMLElement,
-    node: HierarchyNode,
+    node: IHierarchyNode,
     globalGuidMap?: Map<string, string>
   ): void {
     this.applyImage(el, node, globalGuidMap);
@@ -31,7 +26,7 @@ export class VisualComponentRenderer {
    */
   private static applyImage(
     el: HTMLElement,
-    node: HierarchyNode,
+    node: IHierarchyNode,
     globalGuidMap?: Map<string, string>
   ): void {
     const image = node.components.find(
@@ -52,7 +47,7 @@ export class VisualComponentRenderer {
 
       if (spritePath) {
         const isDirectUrl = spritePath.startsWith('data:') || spritePath.startsWith('blob:') || spritePath.startsWith('http:') || spritePath.startsWith('https:');
-        const bgUrl = isDirectUrl ? spritePath : this.getViteFsUrl(spritePath);
+        const bgUrl = isDirectUrl ? spritePath : UnityVitePathResolver.getViteFsUrl(spritePath);
         el.style.backgroundImage = `url('${bgUrl}')`;
         el.style.backgroundSize = '100% 100%';
         el.style.backgroundRepeat = 'no-repeat';
@@ -79,7 +74,7 @@ export class VisualComponentRenderer {
   /**
    * Renders Text, TextMeshPro, or TextMeshProUGUI elements.
    */
-  private static applyText(el: HTMLElement, node: HierarchyNode): void {
+  private static applyText(el: HTMLElement, node: IHierarchyNode): void {
     const textComp = node.components.find(
       c =>
         c.typeStr === 'Text' ||
