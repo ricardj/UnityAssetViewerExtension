@@ -1,5 +1,5 @@
-import { ParsedPrefab } from './ParsedPrefab';
-import { LocalRepoProvider } from './LocalRepoProvider';
+import { ParsedPrefab } from '../types/ParsedPrefab';
+import { LocalRepoProvider } from '../providers/LocalRepoProvider';
 import { parseUnityYaml } from './parseUnityYaml';
 import { applyModifications } from './applyModifications';
 

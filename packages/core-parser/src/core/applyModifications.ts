@@ -1,5 +1,5 @@
-import { UnityObject } from './UnityObject';
-import { ParsedPrefab } from './ParsedPrefab';
+import { UnityObject } from '../types/UnityObject';
+import { ParsedPrefab } from '../types/ParsedPrefab';
 
 export function applyModifications(baseParsed: ParsedPrefab, variantParsed: ParsedPrefab): ParsedPrefab {
   // Deep clone the base objects so we don't mutate the cached version

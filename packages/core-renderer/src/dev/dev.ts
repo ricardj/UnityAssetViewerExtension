@@ -1,9 +1,9 @@
 import { parsePrefabComplete, buildHierarchy, parseUnityYaml } from '@unity-asset-viewer/core-parser';
-import { renderHierarchy } from './index';
+import { renderHierarchy } from '../index';
 import { PreviewMeta } from './PreviewMeta';
 import { DevLocalRepoProvider, getViteFsUrl } from './DevLocalRepoProvider';
 
-import samplePrefab from '../../core-parser/tests/sample.prefab?raw';
+import samplePrefab from '../../../core-parser/tests/sample.prefab?raw';
 
 
 async function init() {

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Unity Asset Viewer",
-  "version": "1.0.42",
+  "version": "1.0.45",
   "description": "View Unity Prefabs in GitHub and GitLab MRs",
   "permissions": [
     "activeTab",

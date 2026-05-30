@@ -1,9 +1,9 @@
 import { HierarchyNode, UnityObject } from '@unity-asset-viewer/core-parser';
-import { RectTransformApplier } from './RectTransformApplier';
+import { RectTransformApplier } from '../appliers/RectTransformApplier';
 import { VisualComponentRenderer } from './VisualComponentRenderer';
-import { LayoutGroupApplier } from './LayoutGroupApplier';
-import { LayoutContext } from './LayoutContext';
-import { ContentSizeFitterApplier } from './ContentSizeFitterApplier';
+import { LayoutGroupApplier } from '../appliers/LayoutGroupApplier';
+import { LayoutContext } from '../context/LayoutContext';
+import { ContentSizeFitterApplier } from '../appliers/ContentSizeFitterApplier';
 import { HierarchyTreeBuilder } from './HierarchyTreeBuilder';
 
 /**

@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { findFileByGuidInWorkspace } from './findFileByGuidInWorkspace';
-import { getScriptGuidMapInWorkspace } from './getScriptGuidMapInWorkspace';
-import { getWebviewContent } from './getWebviewContent';
+import { findFileByGuidInWorkspace } from '../services/findFileByGuidInWorkspace';
+import { getScriptGuidMapInWorkspace } from '../services/getScriptGuidMapInWorkspace';
+import { getWebviewContent } from '../webview-host/getWebviewContent';
 
 export function activate(context: vscode.ExtensionContext) {
   let disposable = vscode.commands.registerCommand('unityAssetViewer.showPreview', () => {

@@ -1,7 +1,7 @@
 import * as YAML from 'yaml';
-import { UnityObject } from './UnityObject';
-import { PrefabVariantInfo } from './PrefabVariantInfo';
-import { ParsedPrefab } from './ParsedPrefab';
+import { UnityObject } from '../types/UnityObject';
+import { PrefabVariantInfo } from '../types/PrefabVariantInfo';
+import { ParsedPrefab } from '../types/ParsedPrefab';
 
 function replaceBigInts(obj: any): any {
   if (typeof obj === 'bigint') {

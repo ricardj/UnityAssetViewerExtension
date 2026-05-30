@@ -1,6 +1,6 @@
 import { parsePrefabComplete, buildHierarchy } from '@unity-asset-viewer/core-parser';
 import { renderHierarchy } from '@unity-asset-viewer/core-renderer';
-import { WebviewLocalRepoProvider } from './WebviewLocalRepoProvider';
+import { WebviewLocalRepoProvider } from './webview-host/WebviewLocalRepoProvider';
 
 const repoProvider = new WebviewLocalRepoProvider();
 

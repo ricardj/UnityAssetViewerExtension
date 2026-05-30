@@ -1,8 +1,8 @@
-export { saveHandle } from './saveHandle';
-export { loadHandle } from './loadHandle';
-export { findPrefabByGuid } from './findPrefabByGuid';
-export { buildScriptGuidMap } from './buildScriptGuidMap';
-export { saveScriptMap } from './saveScriptMap';
-export { loadScriptMap } from './loadScriptMap';
-export { ChromeLocalRepoProvider } from './ChromeLocalRepoProvider';
-export { findAssetFileByGuid } from './findAssetFileByGuid';
+export { saveHandle } from './storage/saveHandle';
+export { loadHandle } from './storage/loadHandle';
+export { findPrefabByGuid } from './repo/findPrefabByGuid';
+export { buildScriptGuidMap } from './repo/buildScriptGuidMap';
+export { saveScriptMap } from './storage/saveScriptMap';
+export { loadScriptMap } from './storage/loadScriptMap';
+export { ChromeLocalRepoProvider } from './repo/ChromeLocalRepoProvider';
+export { findAssetFileByGuid } from './repo/findAssetFileByGuid';

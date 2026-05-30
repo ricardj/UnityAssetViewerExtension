@@ -1,2 +1,2 @@
-export { activate } from './activate';
-export { deactivate } from './deactivate';
+export { activate } from './core/activate';
+export { deactivate } from './core/deactivate';

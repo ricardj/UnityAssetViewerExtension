@@ -1,6 +1,6 @@
 import { UnityObject, HierarchyNode } from '@unity-asset-viewer/core-parser';
 import { RectTransformApplier } from './RectTransformApplier';
-import { LayoutContext } from './LayoutContext';
+import { LayoutContext } from '../context/LayoutContext';
 
 const LAYOUT_GUIDS = {
   HORIZONTAL: '3245ec927659c4140ac6dcff0d3908b4',

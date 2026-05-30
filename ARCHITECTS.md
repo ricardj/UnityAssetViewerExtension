@@ -20,15 +20,37 @@ This project is a multi-platform extension (Chrome/Firefox/GitLab and VS Code) d
 
 ## 🧱 Monorepo Layout & System Blueprints
 
-This repository is structured as an `npm workspaces` monorepo:
+This repository is structured as an `npm workspaces` monorepo with a modularized, grouped folder structure to maintain clean boundaries:
 
 ```
 unity-asset-viewer-extension/
 ├── packages/
 │   ├── core-parser/       # [Vanilla TS] Parses raw Unity YAML into standard HierarchyNode[]
+│   │   ├── src/
+│   │   │   ├── core/      # Core parsing engine (YAML parser, hierarchy tree builder, variant modifications applier)
+│   │   │   ├── providers/ # Abstractions for repository access (e.g. LocalRepoProvider)
+│   │   │   ├── types/     # Type/Interface/Class definitions (HierarchyNode, UnityObject, ParsedPrefab, etc.)
+│   │   │   └── index.ts   # Package entrypoint (re-exports)
 │   ├── core-renderer/     # [Vanilla TS/HTML] Maps HierarchyNode[] to absolute HTML/CSS elements
+│   │   ├── src/
+│   │   │   ├── appliers/  # Layout and positioning logic (RectTransform, LayoutGroup, ContentSizeFitter)
+│   │   │   ├── components/# Visual elements & trees (UnityViewer, HierarchyTreeBuilder, VisualComponentRenderer)
+│   │   │   ├── context/   # Context helpers (LayoutContext)
+│   │   │   ├── dev/       # Under-development helpers, preview targets and mock repository providers
+│   │   │   └── index.ts   # Package entrypoint (re-exports)
 │   ├── chrome-extension/  # [Chrome API] Injects into GitHub/GitLab PRs & blob pages
+│   │   ├── src/
+│   │   │   ├── repo/      # Local repository providers & file retrieval utilities
+│   │   │   ├── storage/   # Extension storage accessors (handles, script map, etc.)
+│   │   │   ├── content.ts # GitHub/GitLab page scraping & rendering script
+│   │   │   └── popup.ts   # Extension popup script
 │   └── vscode-extension/  # [VS Code API] Renders custom preview editors inside VS Code
+│       ├── src/
+│       │   ├── core/      # Activation and deactivation hooks
+│       │   ├── services/  # File & GUID map lookup services in workspace
+│       │   ├── webview-host/# Webview host & repo providers (getWebviewContent, etc.)
+│       │   ├── extension.ts # Extension entry point
+│       │   └── webview.ts # Inside-webview renderer hook
 ├── scripts/               # CLI scripts for local preview testing and GitHub Releases
 ├── .agents/               # Automation scripts for agent-guided builds/deployments
 └── package.json           # Root package.json defining workspaces
@@ -79,22 +101,34 @@ graph TD
 ### 1. `packages/core-parser`
 *   **Purpose**: Handles raw string manipulation of Unity `.prefab` files.
 *   **Key Concept**: Parses multi-document Unity YAML, matching documents by ClassID and FileID, then maps them into a logical tree.
-*   **Core Functions**:
-    *   `parseUnityYaml(yamlString)`: Splices multi-document YAML via custom regex `/--- !u!(\d+)...+/` and parses with the `yaml` npm package. Special handling replaces huge BigInts to safe Javascript numbers.
-    *   `buildHierarchy(objects)`: Iterates over the flattened list of documents, locating `GameObject` elements, mapping their respective `Transform`/`RectTransform` nodes, and constructing parent-child hierarchies.
-    *   `applyModifications(baseParsed, variantParsed)`: If a prefab is a *Variant*, this function takes the base prefab objects and overrides properties defined in the variant's `m_Modification` arrays.
+*   **Structure**:
+    *   `src/core/`: Contains the main parser implementation (`parseUnityYaml.ts`, `buildHierarchy.ts`, `applyModifications.ts`, `parsePrefabComplete.ts`).
+    *   `src/providers/`: Houses environment-agnostic repo providers like `LocalRepoProvider.ts`.
+    *   `src/types/`: Houses individual type definitions (`HierarchyNode.ts`, `ParsedPrefab.ts`, `PrefabVariantInfo.ts`, `UnityObject.ts`) in strict compliance with the single-class-per-file rule.
+*   **Key Functions**:
+    *   `parseUnityYaml(yamlString)` (in `src/core/parseUnityYaml.ts`): Splices multi-document YAML via custom regex `/--- !u!(\d+)...+/` and parses with the `yaml` npm package. Special handling replaces huge BigInts to safe Javascript numbers.
+    *   `buildHierarchy(objects)` (in `src/core/buildHierarchy.ts`): Iterates over the flattened list of documents, locating `GameObject` elements, mapping their respective `Transform`/`RectTransform` nodes, and constructing parent-child hierarchies.
+    *   `applyModifications(baseParsed, variantParsed)` (in `src/core/applyModifications.ts`): If a prefab is a *Variant*, this function takes the base prefab objects and overrides properties defined in the variant's `m_Modification` arrays.
 
 ### 2. `packages/core-renderer`
 *   **Purpose**: Constructs the double-pane container (Visual Viewport + Interactive Tree Hierarchy).
+*   **Structure**:
+    *   `src/appliers/`: Absolute/flex/grid math appliers (`RectTransformApplier.ts`, `LayoutGroupApplier.ts`, `ContentSizeFitterApplier.ts`).
+    *   `src/components/`: DOM builders and render engines (`UnityViewer.ts`, `VisualComponentRenderer.ts`, `HierarchyTreeBuilder.ts`, `renderHierarchy.ts`).
+    *   `src/context/`: Domain-specific context handlers (`LayoutContext.ts`).
+    *   `src/dev/`: Isolated developer playground components (`DevLocalRepoProvider.ts`, `PreviewMeta.ts`, `dev.ts`, `env.d.ts`).
 *   **Key Components**:
-    *   `UnityViewer.ts`: Standard entry point coordinating the two panes.
-    *   `RectTransformApplier.ts`: Calculates pivot points, anchors, and positions, mapping them to CSS absolute layouts.
-    *   `LayoutGroupApplier.ts`: Detects `VerticalLayoutGroup`, `HorizontalLayoutGroup`, and `GridLayoutGroup` and converts them to CSS Flexbox/Grid equivalents.
-    *   `ContentSizeFitterApplier.ts`: Simulates Unity's content size fitting by letting children dynamically grow the parents horizontally or vertically.
-    *   `VisualComponentRenderer.ts`: Draws the visuals (Text, Images, Raw wireframes) inside the absolute boxes.
+    *   `UnityViewer.ts` (in `src/components/UnityViewer.ts`): Standard entry point coordinating the two panes.
+    *   `RectTransformApplier.ts` (in `src/appliers/RectTransformApplier.ts`): Calculates pivot points, anchors, and positions, mapping them to CSS absolute layouts.
+    *   `LayoutGroupApplier.ts` (in `src/appliers/LayoutGroupApplier.ts`): Detects `VerticalLayoutGroup`, `HorizontalLayoutGroup`, and `GridLayoutGroup` and converts them to CSS Flexbox/Grid equivalents.
+    *   `ContentSizeFitterApplier.ts` (in `src/appliers/ContentSizeFitterApplier.ts`): Simulates Unity's content size fitting by letting children dynamically grow the parents horizontally or vertically.
+    *   `VisualComponentRenderer.ts` (in `src/components/VisualComponentRenderer.ts`): Draws the visuals (Text, Images, Raw wireframes) inside the absolute boxes.
 
 ### 3. `packages/chrome-extension`
 *   **Purpose**: Content script injected into GitHub (`github.com`) and GitLab (`gitlab.com`).
+*   **Structure**:
+    *   `src/repo/`: Storage and FS API interfaces (`ChromeLocalRepoProvider.ts`, `buildScriptGuidMap.ts`, `findAssetFileByGuid.ts`, `findPrefabByGuid.ts`).
+    *   `src/storage/`: IndexedDB / Chrome extension state handlers (`loadHandle.ts`, `loadScriptMap.ts`, `saveHandle.ts`, `saveScriptMap.ts`).
 *   **Key Behavior**:
     *   Injects an `👁️ Render UI Prefab` button adjacent to `.prefab` file headers.
     *   Supports the **File System Access API (`showDirectoryPicker`)** allowing users to grant access to their local project directory to automatically resolve Prefab Variants and script name maps on the fly!
@@ -102,6 +136,10 @@ graph TD
 
 ### 4. `packages/vscode-extension`
 *   **Purpose**: Visual Studio Code Custom Editor provider.
+*   **Structure**:
+    *   `src/core/`: Bootstrapping hooks (`activate.ts`, `deactivate.ts`).
+    *   `src/services/`: Local file lookups (`findFileByGuidInWorkspace.ts`, `getScriptGuidMapInWorkspace.ts`).
+    *   `src/webview-host/`: Inside-VS-Code sidecar controllers (`WebviewLocalRepoProvider.ts`, `getWebviewContent.ts`).
 *   **Key Behavior**:
     *   Registers command `unityAssetViewer.showPreview`.
     *   Launches a Webview panel beside the active prefab text editor and posts the document text to it.

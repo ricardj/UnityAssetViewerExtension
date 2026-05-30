@@ -1,5 +1,5 @@
-import { UnityObject } from './UnityObject';
-import { HierarchyNode } from './HierarchyNode';
+import { UnityObject } from '../types/UnityObject';
+import { HierarchyNode } from '../types/HierarchyNode';
 
 export function buildHierarchy(objects: UnityObject[]): HierarchyNode[] {
   const objMap = new Map<string, UnityObject>();
