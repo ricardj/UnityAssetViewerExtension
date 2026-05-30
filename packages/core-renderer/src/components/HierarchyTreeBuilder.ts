@@ -146,12 +146,12 @@ export class HierarchyTreeBuilder {
     label.appendChild(text);
 
     label.addEventListener('mouseover', () => {
-      if (label.style.backgroundColor !== 'rgb(44, 93, 135)') {
-        label.style.backgroundColor = '#444';
+      if (label.style.backgroundColor !== 'var(--uv-hierarchy-active-bg)') {
+        label.style.backgroundColor = 'var(--uv-hover-bg)';
       }
     });
     label.addEventListener('mouseout', () => {
-      if (label.style.backgroundColor !== 'rgb(44, 93, 135)') {
+      if (label.style.backgroundColor !== 'var(--uv-hierarchy-active-bg)') {
         label.style.backgroundColor = 'transparent';
       }
     });
@@ -172,7 +172,7 @@ export class HierarchyTreeBuilder {
       compHeader.style.cursor = 'pointer';
       compHeader.style.userSelect = 'none';
       compHeader.style.fontSize = '11px';
-      compHeader.style.color = '#aaa';
+      compHeader.style.color = 'var(--uv-comp-header-text)';
       compHeader.style.fontWeight = 'bold';
 
       const compToggle = document.createElement('span');
@@ -197,7 +197,7 @@ export class HierarchyTreeBuilder {
         compEl.style.alignItems = 'center';
         compEl.style.padding = '1px 4px';
         compEl.style.fontSize = '12px';
-        compEl.style.color = '#ccc';
+        compEl.style.color = 'var(--uv-comp-text)';
 
         const rawName = comp.typeStr;
         const resolvedName =
@@ -239,7 +239,7 @@ export class HierarchyTreeBuilder {
       document.querySelectorAll('.unity-hierarchy-item').forEach(el => {
         (el as HTMLElement).style.backgroundColor = 'transparent';
       });
-      label.style.backgroundColor = 'rgb(44, 93, 135)';
+      label.style.backgroundColor = 'var(--uv-hierarchy-active-bg)';
 
       const id = node.gameObject.id;
       const targetEl = document.querySelector(`.unity-prefab-container [class*="unity-go"]`)

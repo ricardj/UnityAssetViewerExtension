@@ -5,6 +5,7 @@ import { LayoutGroupApplier } from '../appliers/LayoutGroupApplier';
 import { ILayoutContext } from '../context/ILayoutContext';
 import { ContentSizeFitterApplier } from '../appliers/ContentSizeFitterApplier';
 import { HierarchyTreeBuilder } from './HierarchyTreeBuilder';
+import { ThemeConfig } from '../config/ThemeConfig';
 
 /**
  * UnityViewer coordinates the rendering of the entire visual viewport and the
@@ -25,8 +26,11 @@ export class UnityViewer {
     wrapper.style.width = '100%';
     wrapper.style.height = '100%';
     wrapper.style.fontFamily = 'sans-serif';
-    wrapper.style.color = '#fff';
+    wrapper.style.color = 'var(--uv-text)';
     wrapper.style.overflow = 'hidden';
+
+    // Setup initial theme
+    ThemeConfig.applyThemeVariables(wrapper);
 
     // --- Left: Visual Render Viewport ---
     const viewport = document.createElement('div');
@@ -34,8 +38,7 @@ export class UnityViewer {
     viewport.style.flex = '1';
     viewport.style.position = 'relative';
     viewport.style.overflow = 'hidden';
-    viewport.style.background =
-      'linear-gradient(to bottom, #314D79 0%, #76899A 50%, #4B4B4B 50%, #222222 100%)';
+    viewport.style.background = 'var(--uv-bg)';
 
     const container = document.createElement('div');
     container.className = 'unity-prefab-container';
@@ -55,19 +58,43 @@ export class UnityViewer {
     const hierarchyPanel = document.createElement('div');
     hierarchyPanel.className = 'unity-hierarchy-panel';
     hierarchyPanel.style.width = '280px';
-    hierarchyPanel.style.backgroundColor = '#383838';
-    hierarchyPanel.style.borderLeft = '1px solid #222';
+    hierarchyPanel.style.backgroundColor = 'var(--uv-panel-bg)';
+    hierarchyPanel.style.borderLeft = '1px solid var(--uv-border)';
     hierarchyPanel.style.overflowY = 'auto';
     hierarchyPanel.style.padding = '8px';
     hierarchyPanel.style.fontSize = '13px';
     hierarchyPanel.style.lineHeight = '1.4';
 
     const hierarchyTitle = document.createElement('div');
-    hierarchyTitle.textContent = 'Hierarchy';
+    hierarchyTitle.style.display = 'flex';
+    hierarchyTitle.style.justifyContent = 'space-between';
+    hierarchyTitle.style.alignItems = 'center';
     hierarchyTitle.style.fontWeight = 'bold';
     hierarchyTitle.style.marginBottom = '10px';
     hierarchyTitle.style.paddingBottom = '4px';
-    hierarchyTitle.style.borderBottom = '1px solid #222';
+    hierarchyTitle.style.borderBottom = '1px solid var(--uv-border)';
+
+    const hierarchyTitleText = document.createElement('span');
+    hierarchyTitleText.textContent = 'Hierarchy';
+    hierarchyTitle.appendChild(hierarchyTitleText);
+
+    const themeToggle = document.createElement('button');
+    themeToggle.textContent = ThemeConfig.getMode() === 'light' ? '🌙' : '☀️';
+    themeToggle.style.background = 'transparent';
+    themeToggle.style.border = 'none';
+    themeToggle.style.cursor = 'pointer';
+    themeToggle.style.fontSize = '14px';
+    themeToggle.style.padding = '0';
+    themeToggle.title = 'Toggle Theme';
+
+    themeToggle.addEventListener('click', () => {
+      const newMode = ThemeConfig.getMode() === 'light' ? 'dark' : 'light';
+      ThemeConfig.setMode(newMode);
+      ThemeConfig.applyThemeVariables(wrapper, newMode);
+      themeToggle.textContent = newMode === 'light' ? '🌙' : '☀️';
+    });
+
+    hierarchyTitle.appendChild(themeToggle);
     hierarchyPanel.appendChild(hierarchyTitle);
 
     for (const node of nodes) {
