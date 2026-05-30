@@ -10,6 +10,8 @@ Features:
   - https://github.com/Unity-Technologies/uGUI/tree/main/com.unity.ugui
   - https://github.com/unity-technologies/unitycsreference
 - Add light mode for the renderer
+- Add a way of properly test each package.
+
 
 Fixes:
 - Prefab variant content is not nested to the parent in the visualization
