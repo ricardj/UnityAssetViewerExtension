@@ -49,11 +49,11 @@ When a feature request is received, perform the following phases in order:
     *   Load `.agents/skills/feature-builder/prompts/validator_agent.txt` as the system prompt.
 2.  **Spawn Validator Agent**:
     *   Define a new subagent named `Validator Agent` with the validator system prompt.
-    *   Invoke it with a task prompt: `"Run the workspace build and tests using the validation script at .agents/skills/feature-builder/scripts/validate.js. Create a walkthrough.md summarizing the results."`
+    *   Invoke it with a task prompt: `"Run the workspace build and tests using the validation script at .agents/skills/feature-builder/scripts/validate.js. Create a walkthrough.md summarizing the results. Also review all code modifications and update ARCHITECTS.md in the root directory to keep the architecture guidelines fully up-to-date."`
 3.  **Automated Checks**:
-    *   The Validator Agent will execute the validation script, check for compile/test errors, and either report failures back to the Coding phase or construct a premium `walkthrough.md` report.
+    *   The Validator Agent will execute the validation script, check for compile/test errors, and either report failures back to the Coding phase or construct a premium `walkthrough.md` report. It will also update `ARCHITECTS.md` in the root directory to document any new files, classes, components, or guidelines introduced.
 4.  **Workflow Completion**:
-    *   Verify the final state of `task.md` and `walkthrough.md`.
+    *   Verify the final state of `task.md`, `walkthrough.md`, and `ARCHITECTS.md`.
     *   Deliver a concise summary of accomplishments and hand-off links to the user.
 
 ---

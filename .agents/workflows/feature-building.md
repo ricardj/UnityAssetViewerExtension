@@ -78,6 +78,7 @@ The **Validator Agent** performs rigorous quality checks, compiling the workspac
 - Ensure all unit tests pass seamlessly.
 - Verify layout calculations and design accuracy.
 - Prepare a comprehensive post-implementation summary.
+- Keep the codebase onboarding architecture documentation in [ARCHITECTS.md](file:///c:/Users/User/Documents/1_Projects/UnityAssetViewerExtension/ARCHITECTS.md) updated as a single source of truth for design patterns, file structure, and guidelines.
 
 ### 🛠️ Execution Protocol
 1.  **Build Workspaces**:
@@ -90,4 +91,5 @@ The **Validator Agent** performs rigorous quality checks, compiling the workspac
     *   Create or update `walkthrough.md` in the brain folder.
     *   Provide a list of files modified, what was tested, and command outputs.
     *   Embed visual screenshots (if applicable) or verification logs to demonstrate correct execution.
+    *   Analyze all modifications made during the implementation and update `ARCHITECTS.md` at the project root to reflect any new files, classes, components, folder structure, or guidelines introduced.
 5.  **Checkpoint**: Provide a concise summary of the successful validation to the user, linking them to the complete `walkthrough.md`.
