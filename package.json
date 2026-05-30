@@ -14,7 +14,8 @@
     "preview:layout-4-images": "node scripts/preview.js unity-test-project/Assets/Prefab/Layout4Images.prefab",
     "preview:square-2-images": "node scripts/preview.js unity-test-project/Assets/Prefab/Square2Images.prefab",
     "preview:square-2-images-variant": "node scripts/preview.js unity-test-project/Assets/Prefab/Square2ImagesVariant.prefab",
-    "release": "node scripts/release.js"
+    "release": "node scripts/release.js",
+    "push-release": "node .agents/skills/push-and-release/scripts/push-and-release.js"
   },
   "keywords": [],
   "author": "",
