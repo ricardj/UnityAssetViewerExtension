@@ -1,7 +1,7 @@
 # Unity Asset Viewer Extension
 
 <p align="center">
-  <img src="visuals/logo.jpg" alt="Unity Asset Viewer Extension Logo" width="160" />
+  <img src="docs/logo.jpg" alt="Unity Asset Viewer Extension Logo" width="160" />
 </p>
 
 A browser and editor extension that renders Unity UI Prefab files visually — directly inside GitHub/GitLab Merge Requests and Visual Studio Code.
