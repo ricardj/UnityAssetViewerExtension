@@ -222,6 +222,10 @@ To prevent regression and code degradation, all agents must adhere to the follow
 ### 4. Code Documentation Integrity
 *   Always keep existing comments, function headers, and docstrings unless they are directly invalidated by your modifications.
 
+### 5. Single Class/Interface Per File (Separated Files)
+*   **Rule**: Each class, interface, type, or enum must always be declared in its own dedicated, separate file.
+*   **Constraint**: Never declare multiple classes, interfaces, or types in a single source file. Exported declarations must reside in files named exactly after them to ensure clean modularity and predictable imports.
+
 ---
 
 ## 💻 Commands & Development Guide

@@ -1,4 +1,4 @@
-import { parseUnityYaml, buildHierarchy, applyModifications } from '@unity-asset-viewer/core-parser';
+import { parsePrefabComplete, buildHierarchy, LocalRepoProvider, parseUnityYaml } from '@unity-asset-viewer/core-parser';
 import { renderHierarchy } from './index';
 
 import samplePrefab from '../../core-parser/tests/sample.prefab?raw';
@@ -14,6 +14,27 @@ function getViteFsUrl(absolutePath: string): string {
   const normalized = absolutePath.replace(/\\/g, '/');
   return normalized.startsWith('/') ? `/@fs${normalized}` : `/@fs/${normalized}`;
 }
+
+export class DevLocalRepoProvider implements LocalRepoProvider {
+  constructor(private guidMap: Record<string, string>) {}
+
+  async findPrefabByGuid(guid: string): Promise<string | null> {
+    const path = this.guidMap[guid];
+    if (!path) return null;
+    const res = await fetch(getViteFsUrl(path));
+    return res.ok ? res.text() : null;
+  }
+
+  async getScriptGuidMap(): Promise<Map<string, string>> {
+    return new Map(Object.entries(this.guidMap));
+  }
+
+  async resolveAssetUrl(guid: string): Promise<string | null> {
+    const path = this.guidMap[guid];
+    return path ? getViteFsUrl(path) : null;
+  }
+}
+
 
 async function init() {
   let prefabText = samplePrefab;
@@ -70,47 +91,40 @@ async function init() {
 
   // Parse and Render
   try {
-    let parsed = parseUnityYaml(prefabText);
-
-    if (parsed.variantInfo) {
-      const baseGuid = parsed.variantInfo.basePrefabGuid;
-      const basePath = guidMap[baseGuid];
-      if (basePath) {
-        try {
-          const baseRes = await fetch(getViteFsUrl(basePath));
-          if (baseRes.ok) {
-            const baseText = await baseRes.text();
-            const baseParsed = parseUnityYaml(baseText);
-            parsed = applyModifications(baseParsed, parsed);
-          }
-        } catch (err) {
-           console.error("Failed to load base prefab from Vite server", err);
-        }
-      } else {
-        console.warn("Base prefab GUID not found in guid-map.json", baseGuid);
-      }
-    }
+    const repoProvider = new DevLocalRepoProvider(guidMap);
+    const parsed = await parsePrefabComplete(prefabText, repoProvider);
 
     console.log('Parsed Objects:', parsed.objects);
     
     const hierarchy = buildHierarchy(parsed.objects);
     console.log('Hierarchy:', hierarchy);
     
-    // Convert guidMap object to Map
-    const globalGuidMap = new Map(Object.entries(guidMap));
-    console.log(`GUID map loaded with ${globalGuidMap.size} entries`);
+    // Resolve visual image assets and script mapping
+    const globalGuidMap = new Map<string, string>();
+    const scriptGuidMap = new Map<string, string>();
+
+    for (const guid in guidMap) {
+      const p = guidMap[guid];
+      if (p.endsWith('.cs') || p.endsWith('.cs.meta')) {
+        const className = p.split(/[\\/]/).pop()?.replace('.meta', '').replace('.cs', '') || '';
+        scriptGuidMap.set(guid, className);
+      } else {
+        globalGuidMap.set(guid, getViteFsUrl(p));
+      }
+    }
+
+    console.log(`GUID maps populated: visual assets: ${globalGuidMap.size}, scripts: ${scriptGuidMap.size}`);
 
     // Debug: log all Image component sprite GUIDs to verify they exist in the map
     for (const obj of parsed.objects) {
       if (obj.properties.m_Sprite?.guid) {
         const guid = obj.properties.m_Sprite.guid;
         const resolved = globalGuidMap.get(guid);
-        console.log(`Sprite GUID ${guid} → ${resolved ? getViteFsUrl(resolved) : '❌ NOT FOUND in guid-map'}`);
+        console.log(`Sprite GUID ${guid} → ${resolved ? resolved : '❌ NOT FOUND in guid-map'}`);
       }
     }
 
-    // For script mapping, we can just use the same global map in the dev environment.
-    const rootEl = renderHierarchy(hierarchy, globalGuidMap, globalGuidMap);
+    const rootEl = renderHierarchy(hierarchy, scriptGuidMap, globalGuidMap);
     
     const appEl = document.getElementById('app')!;
     appEl.innerHTML = ''; // Clear loading state

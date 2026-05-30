@@ -51,7 +51,9 @@ export class VisualComponentRenderer {
       }
 
       if (spritePath) {
-        el.style.backgroundImage = `url('${this.getViteFsUrl(spritePath)}')`;
+        const isDirectUrl = spritePath.startsWith('data:') || spritePath.startsWith('blob:') || spritePath.startsWith('http:') || spritePath.startsWith('https:');
+        const bgUrl = isDirectUrl ? spritePath : this.getViteFsUrl(spritePath);
+        el.style.backgroundImage = `url('${bgUrl}')`;
         el.style.backgroundSize = '100% 100%';
         el.style.backgroundRepeat = 'no-repeat';
         // Clear RectTransform outline on actual images

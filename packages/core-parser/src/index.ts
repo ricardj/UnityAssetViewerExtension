@@ -186,3 +186,46 @@ export function applyModifications(baseParsed: ParsedPrefab, variantParsed: Pars
 
   return { objects: newObjects };
 }
+
+export interface LocalRepoProvider {
+  /**
+   * Find and retrieve the raw YAML content of a prefab by its Unity GUID.
+   */
+  findPrefabByGuid(guid: string): Promise<string | null>;
+
+  /**
+   * Retrieve a mapping of script GUID to script class name (or name of C# class).
+   */
+  getScriptGuidMap(): Promise<Map<string, string>>;
+
+  /**
+   * Find the base64 data URL, blob URL, or resource URL for an asset (e.g. image) by its Unity GUID.
+   */
+  resolveAssetUrl?(guid: string): Promise<string | null>;
+}
+
+/**
+ * Fully parses a prefab, recursively resolving any prefab variants and merging
+ * their properties using the provided LocalRepoProvider.
+ */
+export async function parsePrefabComplete(
+  yamlString: string,
+  repoProvider?: LocalRepoProvider
+): Promise<ParsedPrefab> {
+  let parsed = parseUnityYaml(yamlString);
+  
+  // Recursively resolve variant base prefabs
+  while (parsed.variantInfo && repoProvider) {
+    const baseGuid = parsed.variantInfo.basePrefabGuid;
+    const baseYaml = await repoProvider.findPrefabByGuid(baseGuid);
+    if (!baseYaml) {
+      console.warn(`[core-parser] Could not find base prefab for GUID: ${baseGuid}`);
+      break;
+    }
+    const baseParsed = await parsePrefabComplete(baseYaml, repoProvider);
+    parsed = applyModifications(baseParsed, parsed);
+  }
+  
+  return parsed;
+}
+

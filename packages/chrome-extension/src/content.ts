@@ -1,6 +1,6 @@
-import { parseUnityYaml, buildHierarchy, applyModifications } from '@unity-asset-viewer/core-parser';
+import { parsePrefabComplete, buildHierarchy, parseUnityYaml } from '@unity-asset-viewer/core-parser';
 import { renderHierarchy } from '@unity-asset-viewer/core-renderer';
-import { saveHandle, loadHandle, findPrefabByGuid, buildScriptGuidMap, saveScriptMap, loadScriptMap } from './localRepo';
+import { saveHandle, loadHandle, ChromeLocalRepoProvider, saveScriptMap, loadScriptMap } from './localRepo';
 
 console.log("Unity Asset Viewer content script loaded.");
 
@@ -12,63 +12,80 @@ async function renderPrefab(rawUrl: string, targetContainer: HTMLElement, button
     const response = await fetch(rawUrl);
     const yamlText = await response.text();
     
-    let parsed = parseUnityYaml(yamlText);
     let scriptGuidMap: Map<string, string> | null = null;
 
     // Try to load a previously-saved directory handle
     let handle = await loadHandle();
 
-    // VARIANT RESOLUTION — requires local repo access
-    if (parsed.variantInfo) {
+    // Check if we need local repo access (if it's a variant)
+    const initialParsed = parseUnityYaml(yamlText);
+    if (initialParsed.variantInfo && !handle) {
       button.textContent = '📂 Requesting Local Repo Access...';
-      
-      if (!handle) {
-        alert('This is a Prefab Variant! We need to search your local Unity repository to find the base prefab.');
-        handle = await (window as any).showDirectoryPicker();
-        if (handle) await saveHandle(handle);
-      }
-
+      alert('This is a Prefab Variant! We need to search your local Unity repository to find the base prefab.');
+      handle = await (window as any).showDirectoryPicker();
       if (handle) {
-        // Ensure we have read permissions
-        if (await (handle as any).queryPermission({ mode: 'read' }) !== 'granted') {
-          await (handle as any).requestPermission({ mode: 'read' });
-        }
-
-        button.textContent = '🔍 Searching Local Repo for Base Prefab...';
-        const baseYaml = await findPrefabByGuid(handle, parsed.variantInfo.basePrefabGuid);
-        if (baseYaml) {
-          const baseParsed = parseUnityYaml(baseYaml);
-          parsed = applyModifications(baseParsed, parsed);
-        } else {
-          alert('Could not find the base prefab in the local repository!');
-        }
+        await saveHandle(handle);
       }
     }
 
-    // SCRIPT NAME RESOLUTION — try to build / load from cache
+    let repoProvider: ChromeLocalRepoProvider | undefined = undefined;
     if (handle) {
       // Ensure we have read permissions
-      if (await (handle as any).queryPermission({ mode: 'read' }) === 'granted') {
-        button.textContent = '🔎 Resolving script names...';
-        try {
-          scriptGuidMap = await buildScriptGuidMap(handle);
-          // Cache for next time
-          await saveScriptMap(scriptGuidMap);
-        } catch (e) {
-          console.warn('Failed to scan local repo for script names, using cache', e);
-          scriptGuidMap = await loadScriptMap();
-        }
+      if (await (handle as any).queryPermission({ mode: 'read' }) !== 'granted') {
+        await (handle as any).requestPermission({ mode: 'read' });
+      }
+      repoProvider = new ChromeLocalRepoProvider(handle);
+    }
+
+    button.textContent = '🔍 Loading Prefab and dependencies...';
+    const parsed = await parsePrefabComplete(yamlText, repoProvider);
+
+    // SCRIPT NAME RESOLUTION — try to build / load from cache
+    if (repoProvider) {
+      button.textContent = '🔎 Resolving script names...';
+      try {
+        scriptGuidMap = await repoProvider.getScriptGuidMap();
+        // Cache for next time
+        await saveScriptMap(scriptGuidMap);
+      } catch (e) {
+        console.warn('Failed to scan local repo for script names, using cache', e);
+        scriptGuidMap = await loadScriptMap();
       }
     }
 
-    // If no live handle, try the cached map
+    // If no live handle/map, try the cached map
     if (!scriptGuidMap) {
       scriptGuidMap = await loadScriptMap();
+    }
+
+    // ASSET RESOLUTION — Resolve sprite/asset URLs
+    const globalGuidMap = new Map<string, string>();
+    if (repoProvider) {
+      button.textContent = '🖼️ Resolving visual assets...';
+      const spriteGuids = new Set<string>();
+      for (const obj of parsed.objects) {
+        if (obj.properties) {
+          const spriteGuid = obj.properties.m_Sprite?.guid;
+          if (spriteGuid) {
+            spriteGuids.add(spriteGuid);
+          }
+        }
+      }
+      for (const guid of spriteGuids) {
+        try {
+          const url = await repoProvider.resolveAssetUrl(guid);
+          if (url) {
+            globalGuidMap.set(guid, url);
+          }
+        } catch (e) {
+          console.warn(`Failed to resolve asset URL for GUID ${guid}:`, e);
+        }
+      }
     }
     
     const hierarchy = buildHierarchy(parsed.objects);
     console.log("Hierarchy Output:", hierarchy);
-    const renderEl = renderHierarchy(hierarchy, scriptGuidMap ?? undefined);
+    const renderEl = renderHierarchy(hierarchy, scriptGuidMap ?? undefined, globalGuidMap);
     
     renderEl.style.minHeight = '600px';
     

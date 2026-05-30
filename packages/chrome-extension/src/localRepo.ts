@@ -1,3 +1,5 @@
+import { LocalRepoProvider } from '@unity-asset-viewer/core-parser';
+
 export async function saveHandle(handle: FileSystemDirectoryHandle) {
   return new Promise((resolve) => {
     const req = indexedDB.open('UnityViewerDB', 1);
@@ -125,3 +127,51 @@ export async function loadScriptMap(): Promise<Map<string, string> | null> {
     };
   });
 }
+
+export class ChromeLocalRepoProvider implements LocalRepoProvider {
+  constructor(private dirHandle: FileSystemDirectoryHandle) {}
+
+  async findPrefabByGuid(guid: string): Promise<string | null> {
+    return findPrefabByGuid(this.dirHandle, guid);
+  }
+
+  async getScriptGuidMap(): Promise<Map<string, string>> {
+    return buildScriptGuidMap(this.dirHandle);
+  }
+
+  async resolveAssetUrl(guid: string): Promise<string | null> {
+    const file = await findAssetFileByGuid(this.dirHandle, guid);
+    if (file) {
+      return URL.createObjectURL(file);
+    }
+    return null;
+  }
+}
+
+// Support resolving binary asset files for createObjectURL
+export async function findAssetFileByGuid(dirHandle: FileSystemDirectoryHandle, guid: string): Promise<File | null> {
+  for await (const entry of (dirHandle as any).values()) {
+    if (entry.kind === 'directory') {
+      if (['Library', 'Temp', 'Logs', 'Obj', 'UserSettings', 'Packages', 'ProjectSettings', '.git'].includes(entry.name)) continue;
+      
+      const result = await findAssetFileByGuid(entry as FileSystemDirectoryHandle, guid);
+      if (result) return result;
+    } else if (entry.kind === 'file' && entry.name.endsWith('.meta')) {
+      const fileHandle = entry as FileSystemFileHandle;
+      const file = await fileHandle.getFile();
+      const text = await file.text();
+      
+      if (text.includes(`guid: ${guid}`)) {
+        const assetName = entry.name.replace('.meta', '');
+        try {
+          const assetHandle = await dirHandle.getFileHandle(assetName);
+          return await assetHandle.getFile();
+        } catch (e) {
+          console.error("Found meta but failed to load corresponding asset", e);
+        }
+      }
+    }
+  }
+  return null;
+}
+
