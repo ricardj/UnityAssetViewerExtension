@@ -10,6 +10,7 @@ The project follows strict architectural and naming rules located in `.agents/ru
 - **Self-Explanatory Names:** All files, classes, interfaces, variables, and methods must use long, descriptive, self-explanatory names, and strictly adhere to C# naming conventions. Classes and structs use PascalCase, interfaces use PascalCase with an `I` prefix. Never use short, cryptic, or highly abbreviated names.
 - **Separated Files:** Maintain high modularity. A single source file must not contain more than one primary class or interface declaration.
 - **Grouped Folders:** Scripts and source files must be grouped into logical subfolders based on feature, domain, or concern (e.g., `components/`, `appliers/`, `parsers/`) to maintain a clear visual hierarchy, rather than being flattened at the root of a package.
+- **Consult uGUI Reference:** Always consult the local submodule at `docs/uGUI/com.unity.ugui` when developing or modifying `core-renderer` components to accurately replicate Unity UI engine behavior.
 
 ## Workflows
 We have defined specific multi-agent workflows located in `.agents/workflows/`:
