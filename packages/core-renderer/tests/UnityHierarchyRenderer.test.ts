@@ -77,7 +77,8 @@ describe('UnityHierarchyRenderer – layout', () => {
   it('hierarchy panel shows a "Hierarchy" title', () => {
     const el = UnityHierarchyRenderer.render([]);
     const panel = el.querySelector('.unity-hierarchy-panel')!;
-    expect(panel.firstElementChild!.textContent).toBe('Hierarchy');
+    const titleText = panel.firstElementChild?.querySelector('span');
+    expect(titleText?.textContent).toBe('Hierarchy');
   });
 });
 
