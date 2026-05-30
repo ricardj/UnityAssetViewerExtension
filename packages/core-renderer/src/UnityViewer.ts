@@ -1,7 +1,8 @@
 import { HierarchyNode, UnityObject } from '@unity-asset-viewer/core-parser';
 import { RectTransformApplier } from './RectTransformApplier';
 import { VisualComponentRenderer } from './VisualComponentRenderer';
-import { LayoutGroupApplier, LayoutContext } from './LayoutGroupApplier';
+import { LayoutGroupApplier } from './LayoutGroupApplier';
+import { LayoutContext } from './LayoutContext';
 import { ContentSizeFitterApplier } from './ContentSizeFitterApplier';
 import { HierarchyTreeBuilder } from './HierarchyTreeBuilder';
 

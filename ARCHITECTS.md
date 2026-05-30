@@ -226,6 +226,10 @@ To prevent regression and code degradation, all agents must adhere to the follow
 *   **Rule**: Each class, interface, type, or enum must always be declared in its own dedicated, separate file.
 *   **Constraint**: Never declare multiple classes, interfaces, or types in a single source file. Exported declarations must reside in files named exactly after them to ensure clean modularity and predictable imports.
 
+### 6. Grouped Folder Structure (Visual Project Layout)
+*   **Rule**: Scripts and source files must be grouped into logical subfolders based on feature, domain, or concern.
+*   **Constraint**: Avoid flattening scripts directly in a package's root `src/` directory. Group related classes, interfaces, and helpers into semantic folders (e.g., `components/`, `appliers/`, `helpers/`) to mirror a structured C# project/namespace layout.
+
 ---
 
 ## 💻 Commands & Development Guide

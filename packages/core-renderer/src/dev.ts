@@ -1,39 +1,9 @@
-import { parsePrefabComplete, buildHierarchy, LocalRepoProvider, parseUnityYaml } from '@unity-asset-viewer/core-parser';
+import { parsePrefabComplete, buildHierarchy, parseUnityYaml } from '@unity-asset-viewer/core-parser';
 import { renderHierarchy } from './index';
+import { PreviewMeta } from './PreviewMeta';
+import { DevLocalRepoProvider, getViteFsUrl } from './DevLocalRepoProvider';
 
 import samplePrefab from '../../core-parser/tests/sample.prefab?raw';
-
-interface PreviewMeta {
-  filename: string;
-  originalPath: string;
-  timestamp: string;
-  unityProjectRoot?: string;
-}
-
-function getViteFsUrl(absolutePath: string): string {
-  const normalized = absolutePath.replace(/\\/g, '/');
-  return normalized.startsWith('/') ? `/@fs${normalized}` : `/@fs/${normalized}`;
-}
-
-export class DevLocalRepoProvider implements LocalRepoProvider {
-  constructor(private guidMap: Record<string, string>) {}
-
-  async findPrefabByGuid(guid: string): Promise<string | null> {
-    const path = this.guidMap[guid];
-    if (!path) return null;
-    const res = await fetch(getViteFsUrl(path));
-    return res.ok ? res.text() : null;
-  }
-
-  async getScriptGuidMap(): Promise<Map<string, string>> {
-    return new Map(Object.entries(this.guidMap));
-  }
-
-  async resolveAssetUrl(guid: string): Promise<string | null> {
-    const path = this.guidMap[guid];
-    return path ? getViteFsUrl(path) : null;
-  }
-}
 
 
 async function init() {
