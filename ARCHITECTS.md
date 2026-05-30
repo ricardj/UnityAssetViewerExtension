@@ -268,6 +268,10 @@ To prevent regression and code degradation, all agents must adhere to the follow
 *   **Rule**: Scripts and source files must be grouped into logical subfolders based on feature, domain, or concern.
 *   **Constraint**: Avoid flattening scripts directly in a package's root `src/` directory. Group related classes, interfaces, and helpers into semantic folders (e.g., `components/`, `appliers/`, `helpers/`) to mirror a structured C# project/namespace layout.
 
+### 7. Self-Explanatory & C# Naming Conventions (Descriptive Naming)
+*   **Rule**: All class, interface, and script names must be long, highly descriptive, self-explanatory, and adhere strictly to C# / Unity-style naming conventions.
+*   **Constraint**: Enforce PascalCase for all classes and files. Enforce a capital `I` prefix for all interfaces (e.g., `IRepositoryProvider`). Avoid short, cryptic abbreviations (e.g., use `UnityYamlParser` instead of `YamlParser` or `Parser`). Ensure filenames exactly match the class/interface they contain. Use context-rich prefixes/suffixes to avoid ambiguous duplicate names across different packages (e.g., `ChromeLocalRepoProvider` vs. `WebviewLocalRepoProvider`).
+
 ---
 
 ## 💻 Commands & Development Guide
