@@ -33,7 +33,21 @@ export class UnityPrefabHierarchyBuilder {
       const parentId = t.properties.m_Father?.fileID?.toString();
       if (parentId && parentId !== "0") {
         // Find parent Transform
-        const parentTransform = objMap.get(parentId);
+        let parentTransform = objMap.get(parentId);
+
+        // Resolve stripped variant parent transforms via m_CorrespondingSourceObject
+        while (parentTransform && parentTransform.properties.m_CorrespondingSourceObject) {
+          const correspondingId = parentTransform.properties.m_CorrespondingSourceObject.fileID?.toString();
+          if (correspondingId) {
+            const nextTransform = objMap.get(correspondingId);
+            if (nextTransform) {
+               parentTransform = nextTransform;
+               continue;
+            }
+          }
+          break;
+        }
+
         if (parentTransform) {
           const parentGoId = parentTransform.properties.m_GameObject?.fileID?.toString();
           const parentNode = parentGoId ? nodes.get(parentGoId) : undefined;
